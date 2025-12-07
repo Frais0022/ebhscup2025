@@ -5,7 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EBHS Football Competition</title>
 <style>
-body {font-family: Arial; background: linear-gradient(to right,#6dd5ed,#2193b0); padding:20px; text-align:center; color:#fff;}
+body {font-family: Arial, sans-serif; background: linear-gradient(to right,#6dd5ed,#2193b0); padding:20px; text-align:center; color:#fff;}
+h1 {font-size:24px;margin-bottom:15px;}
+.slot-box, .fixture-box, .chat-box {background: rgba(255,255,255,0.9); color:#000; padding:15px; border-radius:12px; margin:12px auto; width:90%; max-width:500px; box-shadow:0 0 15px rgba(0,0,0,0.2);}
+input, button {width:90%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-top:10px; font-size:16px;}
+button {background:#007bff; color:white; border:none; cursor:pointer;}
+button:disabled {background:gray;}
+img.logo {max-width:50px; max-height:50px; border-radius:50%; margin-left:10px; vertical-align:middle;}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EBHS Football Competition</title>
+<style>
+body {font-family: Arial, sans-serif; background: linear-gradient(to right,#6dd5ed,#2193b0); padding:20px; text-align:center; color:#fff;}
 h1 {font-size:24px;margin-bottom:15px;}
 .slot-box, .fixture-box, .chat-box {background: rgba(255,255,255,0.9); color:#000; padding:15px; border-radius:12px; margin:12px auto; width:90%; max-width:500px; box-shadow:0 0 15px rgba(0,0,0,0.2);}
 input, button {width:90%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-top:10px; font-size:16px;}
@@ -24,7 +38,7 @@ textarea{resize:none;height:60px;width:90%;margin-top:5px;}
 </head>
 <body>
 
-<h1>EBHS INTERHOUSE FOOTBALL COMPETITION</h1>
+<h1>REMI OYEBADE INTERHOUSE FOOTBALL COMPETITION</h1>
 <div id="countdown"></div>
 
 <div id="slots"></div>
@@ -102,7 +116,7 @@ function loadSlots(){
             slotsDiv.innerHTML += `
             <div class="slot-box">
                 <h3>Slot ${index+1}</h3>
-                <input id="input${index}" placeholder="Enter team/house name">
+                <input id="input${index}" placeholder="Enter team name">
                 <input type="file" id="logo${index}" accept="image/*">
                 <button onclick="claimSlot(${index})">Claim Slot</button>
             </div>`;
@@ -157,7 +171,7 @@ function generateFixtures(){
     renderFixtures();
 }
 
-// ---- RENDER FIXTURES, SCORES, CHATS, LEADERBOARDS ----
+// RENDER FIXTURES, SCORES, CHATS, LEADERBOARDS
 function renderFixtures(){
     let data = getStorage();
     let fixturesDiv = document.getElementById("fixtures");
@@ -218,7 +232,7 @@ function renderFixtures(){
     updateGlobalChat();
 }
 
-// -- SCORE FUNCTIONS --
+// SCORE & CHAT FUNCTIONS
 function updateScore(matchIdx, teamIdx, val){
     let data=getStorage();
     data.fixtures.scores[matchIdx][teamIdx] = parseInt(val)||0;
@@ -241,7 +255,6 @@ function updateFinalScore(teamIdx,val){
     setStorage(data); renderFixtures();
 }
 
-// -- CHAT FUNCTIONS --
 function sendChat(idx){
     let scorer=document.getElementById("msg"+idx).value.trim();
     let goals=parseInt(document.getElementById("goals"+idx).value)||1;
@@ -264,7 +277,7 @@ function sendFinalChat(){
     renderFixtures();
 }
 
-// -- LEADERBOARDS --
+// LEADERBOARDS
 function generateMatchLeaderboard(matchIdx){
     let data=getStorage();
     let chat=data.fixtures.chat[matchIdx];
@@ -295,7 +308,7 @@ function updateLeaderboards(){
     document.getElementById("globalLeaderboardTable").innerHTML=generateGlobalLeaderboard();
 }
 
-// -- GLOBAL CHAT --
+// GLOBAL CHAT
 function updateGlobalChat(){
     let data=getStorage();
     let globalDiv=document.getElementById("globalChat");
@@ -308,9 +321,18 @@ function updateGlobalChat(){
     </table>`;
 }
 
-// -- ADMIN RESET --
+// ADMIN RESET
 function resetSlots(){
     let pass=document.getElementById("adminPass").value;
     if(pass!==adminPassword){alert("Incorrect admin password!"); return;}
     if(!confirm("Are you sure you want to reset all slots and data?")) return;
     localStorage.removeItem("comp_"+compID);
+    location.reload();
+}
+
+loadSlots();
+renderFixtures();
+</script>
+
+</body>
+</html>
