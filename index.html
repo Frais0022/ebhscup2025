@@ -1,92 +1,244 @@
-<!DOCTYPE html>
+here<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>EBHS Interhouse Football – Semi-Final Pots</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EBHS Semi-Final Slot Registration</title>
 
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #f5f5f5;
-        padding: 20px;
-        text-align: center;
-    }
-    h1 {
-        font-size: 22px;
-        margin-bottom: 10px;
-    }
-    .box {
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        max-width: 400px;
-        margin: auto;
-    }
-    button {
-        background: #007bff;
-        color: white;
-        border: none;
-        padding: 12px 18px;
-        font-size: 16px;
-        border-radius: 8px;
-        margin-top: 15px;
-        cursor: pointer;
-        width: 100%;
-    }
-    button:hover {
-        background: #0056b3;
-    }
-    .result {
-        background: #fff;
-        padding: 15px;
-        margin-top: 20px;
-        border-radius: 10px;
-        font-size: 18px;
-        font-weight: bold;
-    }
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to right, #6dd5ed, #2193b0);
+    padding: 20px;
+    text-align: center;
+    color: #fff;
+}
+h1 { font-size: 24px; margin-bottom: 15px; }
+.slot-box, .fixture-box {
+    background: rgba(255,255,255,0.9);
+    color: #000;
+    padding: 15px;
+    border-radius: 12px;
+    margin: 12px auto;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+}
+input, button, select {
+    width: 90%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-top: 10px;
+    font-size: 16px;
+}
+button { background: #007bff; color: white; border: none; cursor: pointer; }
+button:disabled { background: gray; }
+img.logo { max-width: 50px; max-height: 50px; border-radius: 50%; margin-left: 10px; vertical-align: middle; }
+#fixtures, #finals { margin-top: 20px; font-size: 18px; font-weight: bold; }
+.match { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
+.match div { display: flex; align-items: center; }
+#countdown { font-size: 20px; margin: 15px 0; }
 </style>
-
 </head>
 <body>
 
-<h1>EBHS INTERHOUSE FOOTBALL COMPETITION<br>SEMI-FINAL POT DRAW</h1>
+<h1>EBHS INTERHOUSE FOOTBALL COMPETITION<br>SEMI-FINAL SLOT REGISTRATION</h1>
+<div id="countdown"></div>
+<div id="slots"></div>
+<button id="generateBtn" onclick="generateFixtures()" disabled>Generate Semi-Final Fixtures</button>
+<div id="fixtures"></div>
+<div id="finals"></div>
 
-<div class="box">
-    <p>Click the button below to randomly generate the semi-final fixtures.</p>
-    <button onclick="generateFixtures()">Generate Semi-Final Fixtures</button>
-</div>
-
-<div id="output" class="result" style="display:none;"></div>
+<input type="password" id="adminPass" placeholder="Enter Admin Password for Reset">
+<button onclick="resetSlots()">Reset All Slots (Admin Only)</button>
 
 <script>
-// --- TEAMS ---
-let teams = ["Red House", "Blue House", "Green House", "Yellow House"];
+// CONFIG
+const adminPassword = "REMI2025";
+const competitionDate = new Date("December 8, 2025 08:30:00").getTime();
 
-// --- Shuffle teams ---
-function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        let j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+// ---- COUNTDOWN ----
+function updateCountdown() {
+    let now = new Date().getTime();
+    let distance = competitionDate - now;
+    if(distance < 0) {
+        document.getElementById("countdown").innerHTML = "Competition is LIVE!";
+        clearInterval(countdownInterval);
+        return;
     }
-    return array;
+    let d = Math.floor(distance / (1000*60*60*24));
+    let h = Math.floor((distance % (1000*60*60*24)) / (1000*60*60));
+    let m = Math.floor((distance % (1000*60*60)) / (1000*60));
+    let s = Math.floor((distance % (1000*60)) / 1000);
+    document.getElementById("countdown").innerHTML =
+        `Competition Starts in: ${d}d ${h}h ${m}m ${s}s`;
+}
+let countdownInterval = setInterval(updateCountdown, 1000);
+
+// ---- STORAGE INIT ----
+if(!localStorage.getItem("teams")) {
+    localStorage.setItem("teams", JSON.stringify([
+        {name:"", logo:""},
+        {name:"", logo:""},
+        {name:"", logo:""},
+        {name:"", logo:""}
+    ]));
+}
+if(!localStorage.getItem("fixtures")) {
+    localStorage.setItem("fixtures", JSON.stringify({semi: null, final: null}));
 }
 
-// --- Generate Fixtures ---
-function generateFixtures() {
+// ---- LOAD SLOTS ----
+function loadSlots() {
+    let slotsDiv = document.getElementById("slots");
+    let teams = JSON.parse(localStorage.getItem("teams"));
+    slotsDiv.innerHTML = "";
+    teams.forEach((team,index)=>{
+        if(team.name==="") {
+            slotsDiv.innerHTML += `
+                <div class="slot-box">
+                    <h3>Slot ${index+1}</h3>
+                    <input id="input${index}" placeholder="Enter team/house name">
+                    <input type="file" id="logo${index}" accept="image/*">
+                    <button onclick="claimSlot(${index})">Claim Slot</button>
+                </div>
+            `;
+        } else {
+            let logoHTML = team.logo ? `<img class="logo" src="${team.logo}">` : "";
+            slotsDiv.innerHTML += `
+                <div class="slot-box">
+                    <h3>Slot ${index+1}</h3>
+                    <p><strong>${team.name}</strong> ${logoHTML}</p>
+                    <button disabled>Slot Taken</button>
+                </div>
+            `;
+        }
+    });
+    checkReady();
+}
+
+// ---- CLAIM SLOT ----
+function claimSlot(i) {
+    let name = document.getElementById("input"+i).value.trim();
+    if(!name){ alert("Team name cannot be empty."); return; }
+    let fileInput = document.getElementById("logo"+i);
+    let reader = new FileReader();
+    reader.onload = function(e){
+        let logoData = e.target.result;
+        let teams = JSON.parse(localStorage.getItem("teams"));
+        teams[i] = {name:name, logo: logoData};
+        localStorage.setItem("teams", JSON.stringify(teams));
+        loadSlots();
+    };
+    if(fileInput.files[0]) reader.readAsDataURL(fileInput.files[0]);
+    else {
+        let teams = JSON.parse(localStorage.getItem("teams"));
+        teams[i] = {name:name, logo:""};
+        localStorage.setItem("teams", JSON.stringify(teams));
+        loadSlots();
+    }
+}
+
+// ---- CHECK READY ----
+function checkReady() {
+    let teams = JSON.parse(localStorage.getItem("teams"));
+    document.getElementById("generateBtn").disabled = !teams.every(t=>t.name!=="");
+}
+
+// ---- SHUFFLE & GENERATE FIXTURES ----
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+
+function generateFixtures(){
+    let teams = JSON.parse(localStorage.getItem("teams"));
     let shuffled = shuffle([...teams]);
-    
-    let fixture1 = `${shuffled[0]} vs ${shuffled[1]}`;
-    let fixture2 = `${shuffled[2]} vs ${shuffled[3]}`;
-
-    document.getElementById("output").style.display = "block";
-    document.getElementById("output").innerHTML = `
-        <p><strong>SEMI-FINAL FIXTURES</strong></p>
-        <p>Match 1: ${fixture1}</p>
-        <p>Match 2: ${fixture2}</p>
-    `;
+    let fixtures = {
+        semi: [
+            {team1: shuffled[0], team2: shuffled[1]},
+            {team1: shuffled[2], team2: shuffled[3]}
+        ],
+        final: null,
+        winners: ["",""]
+    };
+    localStorage.setItem("fixtures", JSON.stringify(fixtures));
+    renderFixtures();
 }
+
+// ---- RENDER FIXTURES ----
+function renderFixtures(){
+    let data = JSON.parse(localStorage.getItem("fixtures"));
+    let fixturesDiv = document.getElementById("fixtures");
+    let finalsDiv = document.getElementById("finals");
+
+    if(data.semi){
+        fixturesDiv.style.display="block";
+        fixturesDiv.innerHTML="<p>SEMI-FINAL FIXTURES</p>";
+        data.semi.forEach((match,idx)=>{
+            fixturesDiv.innerHTML += `
+                <div class="fixture-box match">
+                    <div><strong>${match.team1.name}</strong> ${match.team1.logo ? `<img class="logo" src="${match.team1.logo}">` : ""}</div>
+                    <div>vs</div>
+                    <div><strong>${match.team2.name}</strong> ${match.team2.logo ? `<img class="logo" src="${match.team2.logo}">` : ""}</div>
+                    <div>
+                        <select onchange="updateWinner(${idx}, this.value)">
+                            <option value="">--Select Winner--</option>
+                            <option value="${match.team1.name}">${match.team1.name}</option>
+                            <option value="${match.team2.name}">${match.team2.name}</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+        });
+    } else fixturesDiv.style.display="none";
+
+    if(data.final){
+        finalsDiv.style.display="block";
+        finalsDiv.innerHTML = `<p>FINAL MATCH</p>
+        <div class="fixture-box match">
+            <div><strong>${data.final.team1.name}</strong> ${data.final.team1.logo ? `<img class="logo" src="${data.final.team1.logo}">` : ""}</div>
+            <div>vs</div>
+            <div><strong>${data.final.team2.name}</strong> ${data.final.team2.logo ? `<img class="logo" src="${data.final.team2.logo}">` : ""}</div>
+        </div>`;
+    } else finalsDiv.style.display="none";
+}
+
+// ---- UPDATE WINNER ----
+function updateWinner(matchIndex,winnerName){
+    let data = JSON.parse(localStorage.getItem("fixtures"));
+    data.winners[matchIndex] = winnerName;
+    if(data.winners[0] && data.winners[1]){
+        let t1 = data.semi[0].team1.name===data.winners[0]?data.semi[0].team1:data.semi[0].team2;
+        let t2 = data.semi[1].team1.name===data.winners[1]?data.semi[1].team1:data.semi[1].team2;
+        data.final={team1:t1,team2:t2};
+    }
+    localStorage.setItem("fixtures", JSON.stringify(data));
+    renderFixtures();
+}
+
+// ---- RESET ----
+function resetSlots(){
+    let pass = document.getElementById("adminPass").value;
+    if(pass!==adminPassword){ alert("Incorrect admin password!"); return; }
+    localStorage.setItem("teams", JSON.stringify([
+        {name:"", logo:""},
+        {name:"", logo:""},
+        {name:"", logo:""},
+        {name:"", logo:""}
+    ]));
+    localStorage.setItem("fixtures", JSON.stringify({semi:null,final:null,winners:["",""]}));
+    renderFixtures();
+    loadSlots();
+}
+
+// ---- INITIAL RENDER ----
+loadSlots();
+renderFixtures();
+
+// ---- LOCALSTORAGE EVENT (multi-tab update) ----
+window.addEventListener('storage', ()=>{
+    loadSlots();
+    renderFixtures();
+});
 </script>
 
 </body>
