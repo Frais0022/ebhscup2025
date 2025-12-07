@@ -5,7 +5,29 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>EBHS Interhouse Football — Editable Scores & Auto Scorer Tables</title>
 <style>
-<h1>EBHS Interhouse Football — Editable Scores (Model A)</h1>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(135deg,#0ea5e9,#60a5fa);color:#042;padding:18px;margin:0;}
+  h1{color:#fff;margin:0 0 12px 0;text-align:center}
+  .card{background:#fff;border-radius:10px;padding:12px;max-width:980px;margin:12px auto;box-shadow:0 8px 24px rgba(2,6,23,0.12)}
+  .flex{display:flex;gap:10px;flex-wrap:wrap}
+  input,button,textarea,select{font-size:14px;padding:8px;border-radius:8px;border:1px solid #cbd5e1}
+  button{background:#0369a1;color:white;border:none;cursor:pointer}
+  button.secondary{background:#475569}
+  button:disabled{opacity:0.55;cursor:not-allowed}
+  .slot{width:220px;padding:10px}
+  .logo{width:48px;height:48px;border-radius:8px;object-fit:cover;margin-left:8px}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border:1px solid #e6eef8;padding:6px;text-align:center}
+  th{background:#0369a1;color:#fff}
+  .muted{color:#475569;font-size:13px}
+  .small{font-size:13px}
+  #status{font-size:13px;margin-top:8px;color:#065f46}
+  #error{color:#b91c1c}
+  label{display:block;margin-top:8px;font-weight:600}
+</style>
+</head>
+<body>
+
+<h1>EBHS Interhouse Football — Editable Scores</h1>
 
 <div class="card">
   <div class="flex" style="justify-content:space-between;align-items:center">
@@ -40,11 +62,6 @@
   <div id="globalLeaderboardTable"></div>
 </div>
 
-<div class="card">
-  <h3>Competition Scorers Chat (auto from scorers)</h3>
-  <div id="globalChat"></div>
-</div>
-
 <div class="card small">
   <label>Admin actions (password required)</label>
   <input id="adminPass" type="password" placeholder="Admin password (REMI2025)" />
@@ -57,13 +74,12 @@
 </div>
 
 <script>
-/* ====== CONFIG ====== */
-const BIN_ID = "6935e85143b1c97be9de3eb2"; // Your JSONBin ID
-const API_KEY = "$2a$10$ez2mNhQs2BylwsUGJgfaceuUHDJnBUnWu6mwdgavcko3ZQTMXyKlG"; // Your JSONBin API key
+/* CONFIG */
+const BIN_ID = "6935e85143b1c97be9de3eb2";
+const API_KEY = "$2a$10$ez2mNhQs2BylwsUGJgfaceuUHDJnBUnWu6mwdgavcko3ZQTMXyKlG";
 const ADMIN_PASSWORD = "REMI2025";
 const POLL_MS = 5000;
 const COMP_DATE = new Date("December 8, 2025 08:30:00").getTime();
-/* ================== */
 
 let remoteData = null;
 let pushing = false;
@@ -79,7 +95,7 @@ function shareLinkUpdate(){
   history.replaceState({},'',u.toString());
   document.getElementById('shareLink').textContent = u.toString();
 }
-function escapeHtml(s){ if(s===undefined||s===null) return ""; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escapeHtml(s){ if(!s) return ""; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 /* Countdown */
 function updateCountdown(){
@@ -96,7 +112,7 @@ setInterval(updateCountdown,1000);
 updateCountdown();
 shareLinkUpdate();
 
-/* ====== JSONBin fetch/push ====== */
+/* JSONBin fetch/push */
 async function fetchRemote(){
   try{
     const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -155,87 +171,147 @@ setInterval(fetchRemote, POLL_MS);
 const cached = loadLocal();
 if(cached){ remoteData = cached; renderAll(); }
 
-/* ====== Rest of your UI logic, claimSlot, generateFixtures, saveMatch/saveFinal, render functions ====== */
-/* You can keep all your previous code from your HTML here, just replace pushUpdate & fetchRemote logic as above */
-</script>
-</body>
-</html>￼EnterYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>EBHS Interhouse Football — Editable Scores & Auto Scorer Tables</title>
-<style>
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(135deg,#0ea5e9,#60a5fa);color:#042;padding:18px;margin:0;}
-  h1{color:#fff;margin:0 0 12px 0;text-align:center}
-  .card{background:#fff;border-radius:10px;padding:12px;max-width:980px;margin:12px auto;box-shadow:0 8px 24px rgba(2,6,23,0.12)}
-  .flex{display:flex;gap:10px;flex-wrap:wrap}
-  input,button,textarea,select{font-size:14px;padding:8px;border-radius:8px;border:1px solid #cbd5e1}
-  button{background:#0369a1;color:white;border:none;cursor:pointer}
-  button.secondary{background:#475569}
-  button:disabled{opacity:0.55;cursor:not-allowed}
-  .slot{width:220px;padding:10px}
-  .logo{width:48px;height:48px;border-radius:8px;object-fit:cover;margin-left:8px}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{border:1px solid #e6eef8;padding:6px;text-align:center}
-  th{background:#0369a1;color:#fff}
-  .muted{color:#475569;font-size:13px}
-  .small{font-size:13px}
-  #status{font-size:13px;margin-top:8px;color:#065f46}
-  #error{color:#b91c1c}
-  label{display:block;margin-top:8px;font-weight:600}
-  .right{float:right}
-</style>
-</head>
-<body>
-<h1>EBHS Interhouse Football — Editable Scores (Model A)</h1>
+/* UI & Logic */
+function renderAll(){
+  const data = remoteData || loadLocal();
+  renderSlots(data.teams);
+  renderFixturesUI(data.fixtures);
+  renderLeaderboards(data);
+  checkGenerateEnabled();
+}
 
-<div class="card">
-  <div class="flex" style="justify-content:space-between;align-items:center">
-    <div class="small muted">Shareable link: <code id="shareLink"></code></div>
-    <div id="countdown" class="small muted"></div>
-  </div>
-</div>
+function renderSlots(teams){
+  const row = document.getElementById("slotsRow");
+  row.innerHTML = "";
+  teams.forEach((t,i)=>{
+    const div = document.createElement("div");
+    div.className = "slot";
+    if(!t.name){
+      div.innerHTML = `<div style="font-weight:600">Slot ${i+1}</div>
+        <input id="teamName${i}" placeholder="Team / House name" />
+        <input id="teamLogoFile${i}" type="file" accept="image/*" />
+        <button onclick="claimSlot(${i})">Claim Slot</button>`;
+    } else {
+      const logo = t.logo ? `<img class="logo" src="${t.logo}" alt="logo">` : "";
+      div.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between">
+        <div><strong>Slot ${i+1}</strong><div style="font-weight:600">${escapeHtml(t.name)}</div></div>
+        <div>${logo}</div>
+      </div>`;
+    }
+    row.appendChild(div);
+  });
+}
 
-<div class="card">
-  <h3>Team Slots — Representatives Claim Here</h3>
-  <div id="slotsRow" class="flex"></div>
-  <div style="margin-top:10px"><button id="generateBtn" onclick="generateFixtures()" disabled>Generate Semi-Final Fixtures</button></div>
-</div>
+function claimSlot(index){
+  const nameEl = document.getElementById(`teamName${index}`);
+  if(!nameEl) return alert("Input missing");
+  const name = nameEl.value.trim();
+  if(!name) return alert("Enter team name");
+  const file = document.getElementById(`teamLogoFile${index}`);
+  if(file && file.files && file.files[0]){
+    const reader = new FileReader();
+    reader.onload = e => applyLocalClaim(index, name, e.target.result);
+    reader.readAsDataURL(file.files[0]);
+  } else { applyLocalClaim(index,name,""); }
+}
 
-<div class="card" id="fixturesCard" style="display:none">
-  <h3>Semi-Finals</h3>
-  <div id="fixtures"></div>
-</div>
+function applyLocalClaim(index,name,logo){
+  if(!remoteData) remoteData = loadLocal();
+  remoteData.teams[index] = {name,logo};
+  saveLocal(remoteData);
+  renderAll();
+  pushUpdate(remoteData);
+}
 
-<div class="card" id="finalCard" style="display:none">
-  <h3>Final</h3>
-  <div id="finals"></div>
-</div>
+function checkGenerateEnabled(){
+  const data = remoteData || loadLocal();
+  const ok = data.teams.every(t => t.name && t.name.trim()!=="");
+  document.getElementById("generateBtn").disabled = !ok;
+}
 
-<div class="card">
-  <h3>Per-match Leaderboards</h3>
-  <div id="matchLeaderboards"></div>
-</div>
+function generateFixtures(){
+  if(!remoteData) remoteData = loadLocal();
+  const teams = [...remoteData.teams];
+  for(let i=teams.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [teams[i],teams[j]]=[teams[j],teams[i]]; }
+  remoteData.fixtures = { semi:[{team1:teams[0],team2:teams[1]},{team1:teams[2],team2:teams[3]}], final:null, winners:["",""], scores:[[0,0],[0,0]], chat:[[],[]], finalScore:[0,0], finalChat:[] };
+  saveLocal(remoteData);
+  renderAll();
+  pushUpdate(remoteData);
+}
 
-<div class="card">
-  <h3>Competition Scorers Ranking</h3>
-  <div id="globalLeaderboardTable"></div>
-</div>
+/* Parse scorers string into array */
+function parseScorersList(text){
+  if(!text) return [];
+  const parts = text.replace(/\n/g,',').split(/[,;]+/).map(s=>s.trim()).filter(Boolean);
+  return parts.map(p=>{
+    const m=p.match(/^(.+?)[\s:\-]+(\d+)$/);
+    return m ? {scorer:m[1].trim(), goals:parseInt(m[2],10)} : {scorer:p, goals:1};
+  });
+}
 
-<div class="card">
-  <h3>Competition Scorers Chat (auto from scorers)</h3>
-  <div id="globalChat"></div>
-</div>
+/* Save match */
+function saveMatch(idx){
+  const pass = document.getElementById(`adminPassMatch_${idx}`).value;
+  if(pass!==ADMIN_PASSWORD){ alert("Wrong admin password"); return; }
+  const sA = parseInt(document.getElementById(`scoreA_${idx}`).value)||0;
+  const sB = parseInt(document.getElementById(`scoreB_${idx}`).value)||0;
+  const parsed = parseScorersList(document.getElementById(`scorersList_${idx}`).value||"");
+  remoteData.fixtures.scores[idx] = [sA,sB];
+  remoteData.fixtures.chat[idx] = parsed.map(p=>({ time: new Date().toLocaleTimeString(), scorer:p.scorer, goals:p.goals }));
 
-<div class="card small">
-  <label>Admin actions (password required)</label>
-  <input id="adminPass" type="password" placeholder="Admin password (REMI2025)" />
-  <div style="margin-top:8px;display:flex;gap:8px">
-    <button onclick="resetEverything()" class="secondary">Reset All Data</button>
-    <button onclick="forceFetch()">Sync Now</button>
-  </div>
-  <div id="status"></div>
-  <div id="error"></div>
-</div>
+  // Update winners & final
+  const [s0,s1] = remoteData.fixtures.scores[0];
+  const [s2,s3] = remoteData.fixtures.scores[1];
+  remoteData.fixtures.winners[0]=s0>s1 ? remoteData.fixtures.semi[0].team1.name : s1>s0 ? remoteData.fixtures.semi[0].team2.name :"";
+  remoteData.fixtures.winners[1]=s2>s3 ? remoteData.fixtures.semi[1].team1.name : s3>s2 ? remoteData.fixtures.semi[1].team2.name :"";
+  if(remoteData.fixtures.winners[0] && remoteData.fixtures.winners[1]){
+    const t1=(remoteData.fixtures.semi[0].team1.name===remoteData.fixtures.winners[0]?remoteData.fixtures.semi[0].team1:remoteData.fixtures.semi[0].team2);
+    const t2=(remoteData.fixtures.semi[1].team1.name===remoteData.fixtures.winners[1]?remoteData.fixtures.semi[1].team1:remoteData.fixtures.semi[1].team2);
+    remoteData.fixtures.final={team1:t1,team2:t2}; remoteData.fixtures.finalScore=[0,0]; remoteData.fixtures.finalChat=[];
+  } else { remoteData.fixtures.final=null; remoteData.fixtures.finalScore=[0,0]; remoteData.fixtures.finalChat=[]; }
 
+  saveLocal(remoteData); renderAll(); pushUpdate(remoteData);
+}
+
+/* Save final */
+function saveFinal(){
+  const pass=document.getElementById("adminPassFinal").value;
+  if(pass!==ADMIN_PASSWORD){ alert("Wrong admin password"); return; }
+  const sA=parseInt(document.getElementById("finalScoreA").value)||0;
+  const sB=parseInt(document.getElementById("finalScoreB").value)||0;
+  const parsed=parseScorersList(document.getElementById("finalScorersList").value||"");
+  remoteData.fixtures.finalScore=[sA,sB];
+  remoteData.fixtures.finalChat=parsed.map(p=>({time:new Date().toLocaleTimeString(),scorer:p.scorer,goals:p.goals}));
+  saveLocal(remoteData); renderAll(); pushUpdate(remoteData);
+}
+
+/* Render fixtures UI */
+function renderFixturesUI(fixtures){
+  const fixturesDiv=document.getElementById("fixtures");
+  const finalsDiv=document.getElementById("finals");
+  if(!fixtures || !fixtures.semi){ fixturesDiv.style.display="none"; return; }
+  fixturesDiv.style.display="block"; let html="";
+  fixtures.semi.forEach((m,idx)=>{
+    const scores=fixtures.scores[idx]||[0,0];
+    const scorersText=(fixtures.chat[idx]||[]).map(c=>c.scorer+":"+c.goals).join(", ");
+    html+=`<div style="margin-bottom:12px">
+      <div style="font-weight:700">${escapeHtml(m.team1.name)} <img class="logo" src="${m.team1.logo||''}" onerror="this.style.display='none'"> vs ${escapeHtml(m.team2.name)} <img class="logo" src="${m.team2.logo||''}" onerror="this.style.display='none'"></div>
+      <div style="margin-top:6px">Score: <input id="scoreA_${idx}" type="number" min="0" value="${scores[0]}"> - <input id="scoreB_${idx}" type="number" min="0" value="${scores[1]}"></div>
+      <label>Scorers list — format: John:2, Mary:1</label>
+      <textarea id="scorersList_${idx}" placeholder="e.g. John:2, Mary:1">${escapeHtml(scorersText)}</textarea>
+      <div style="margin-top:6px">
+        <input id="adminPassMatch_${idx}" type="password" placeholder="Admin password" style="width:60%">
+        <button onclick="saveMatch(${idx})">Save Scores & Scorers</button>
+      </div>
+    </div>`;
+  });
+  fixturesDiv.innerHTML=html;
+
+  if(fixtures.final){
+    const f=fixtures.final; const scores=fixtures.finalScore||[0,0];
+    const scorersText=(fixtures.finalChat||[]).map(c=>c.scorer+":"+c.goals).join(", ");
+    finalsDiv.innerHTML=`<div style="font-weight:700">${escapeHtml(f.team1.name)} <img class="logo" src="${f.team1.logo||''}" onerror="this.style.display='none'"> vs ${escapeHtml(f.team2.name)} <img class="logo" src="${f.team2.logo||''}" onerror="this.style.display='none'"></div>
+      <div style="margin-top:6px">Score: <input id="finalScoreA" type="number" min="0" value="${scores[0]}"> - <input id="finalScoreB" type="number" min="0" value="${scores[1]}"></div>
+      <label>Final scorers list</label>
+      <textarea id="finalScorersList" placeholder="e.g. John:2, Mary:1">${escapeHtml(scorersText)}</textarea>
+      <div style="margin-top:6
