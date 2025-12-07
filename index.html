@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EBHS Interhouse Football</title>
+<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-database-compat.js"></script>
+<style>
+body { font-family: Arial; background:#f0f4f8; text-align:center; margin:0; }
+h1{margin-top:20px;color:#222;}
+.match-details{background:#e3f2fd;border:2px solid #90caf9;display:inline-block;padding:15px 25px;border-radius:12px;margin-bottom:20px;font-weight:bold;}
+.match-details input{border:none;background:#e3f2fd;font-weight:bold;width:220px;text-align:center;}
+.bracket-container{display:flex;justify-content:center;align-items:flex-start;gap:30px;flex-wrap:wrap;padding:0 10px;}
+.column{display:flex;flex-direction:column;gap:30px;align-items:center;}
+.slot{background:#fff;border:3px solid #333;border-radius:12px;width:180px;min-height:60px;padding:10px;cursor:pointer;transition:0.3s;font-weight:bold;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+.slot:hover{transform:scale(1.05);}
+.slot.taken{cursor:not-allowed;opacity:0.7;}
+.connector{width:40px;height:2px;background:#333;margin:35px 0;align-self:flex-start;}
+.final-column{display:flex;flex-direction:column;justify-content:center;gap:80px;}
+#status{margin-top:20px;font-weight:bold;color:green;}
+input.result-input{width:70px;margin-top:5px;text-align:center;}
+button.save-btn{margin-top:5px;padding:3px 6px;cursor:pointer;}
+.champion {
+    background: #ffeb3b; 
+    border-color: #fbc02d;
+    color: #333;
+    font-weight: bold;
+    box-shadow: 0 0 20px #fbc02d;
+    position: relative;
+}
+.champion::after {
+    content: "🏆";
+    font-size: 1.5rem;
+    position: absolute;
+    top: -10px;
+    right: -10px;
+}
+</style>
+</head>
+<body>
+
+<h1>REMI OYEBADE INTERHOUSE FOOTBALL</h1>
+
+<div class="match-details">
+📅 Date: <input id="matchDate" type="text" value="Monday, 8th - Tuesday, 9th December, 2025" disabled><br>
+🕣 Time: <input id="matchTime" type="text" value="8:30 a. m." disabled><br>
+📍 Venue: <input id="matchVenue" type="text" value="EBHS Football Field" disabled><br>
+</div>
+
+<p>Representatives claim slots in order. Semi-final pairings are generated automatically once all slots are filled. Enter winners manually.</p>
+
+<div class="bracket-container">
+    <div class="column">
+        <div class="slot" id="slot1" onclick="pickSlot(1)">Slot 1: Available</div>
+        <input type="text" class="result-input" placeholder="Winner" onblur="updateSemiFinalWinner(0,this.value)">
+        <div class="slot" id="slot2" onclick="pickSlot(2)">Slot 2: Available</div>
+        <input type="text" class="result-input" placeholder="Winner" onblur="updateSemiFinalWinner(1,this.value)">
+    </div>
+    <div class="column" style="align-items:center;">
+        <div class="connector"></div>
+        <div class="connector"></div>
+    </div>
+    <div class="column">
+        <div class="slot" id="slot3" onclick="pickSlot(3)">Slot 3: Available</div>
+        <input type="text" class="result-input" placeholder="Winner" onblur="updateSemiFinalWinner(2,this.value)">
+        <div class="slot" id="slot4" onclick="pickSlot(4)">Slot 4: Available</div>
+        <input type="text" class="result-input" placeholder="Winner" onblur="updateSemiFinalWinner(3,this.value)">
+    </div>
+    <div class="final-column">
+        <div class="slot" id="finalSlot" style="border-color:#ff5722;background:#fffbe6;color:#ff5722;">Final: TBD</div>
+        <input type="text" class="result-input" placeholder="Final Winner" onblur="updateFinalWinner(this.value)">
+    </div>
+</div>
+
+<div id="status"></div>
+
+<script>
+// --- Firebase Configuration ---
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// --- Initialize Slots ---
+const slots = ["slot1","slot2","slot3","slot4"];
+const claimedTeams = [null,null,null,null];
+let semiFinalWinners = [null,null];
+let finalWinner = null;
+
+// Load slots from Firebase
+function loadSlots(){
+  db.ref("slots").once("value").then(snapshot=>{
+    const data = snapshot.val() || {};
+    slots.forEach((s,i)=>{
+      const team = data[i] ? data[i].team : null;
+      claimedTeams[i] = team;
+      const slotDiv = document.getElementById(s);
+      slotDiv.textContent = team ? `Slot ${i+1}: ${team}` : `Slot ${i+1}: Available`;
+      slotDiv.classList.toggle("taken", !!team);
+    });
+    generateSemiFinals();
+  });
+}
+
+// Claim a slot
+function pickSlot(index){
+  index = index-1;
+  // enforce serial order
+  for(let i=0;i<index;i++){
+    if(!claimedTeams[i]) { alert(`Please claim Slot ${i+1} first.`); return; }
+  }
+  if(claimedTeams[index]) return;
+  const teamName = prompt("Enter your team name:");
+  if(!teamName || !teamName.trim()) return;
+  db.ref(`slots/${index}`).set({team:teamName}).then(()=>{
+    loadSlots();
+    document.getElementById("status").textContent = `${teamName} claimed Slot ${index+1}`;
+  });
+}
+
+// Generate semi-finals
+function generateSemiFinals(){
+  if(claimedTeams.every(t=>t)){
+    document.getElementById("slot1").textContent = `${claimedTeams[0]} vs ${claimedTeams[1]}`;
+    document.getElementById("slot2").textContent = `${claimedTeams[2]} vs ${claimedTeams[3]}`;
+  }
+}
+
+// Update semi-final winners manually
+function updateSemiFinalWinner(index, winner){
+  semiFinalWinners[index] = winner;
+  generateFinal();
+}
+
+// Generate final
+function generateFinal(){
+  if(semiFinalWinners.every(w=>w)){
+    document.getElementById("finalSlot").textContent = `Final: ${semiFinalWinners[0]} vs ${semiFinalWinners[1]}`;
+    if(finalWinner){ document.getElementById("finalSlot").textContent += ` | Champion: ${finalWinner}`; }
+  }
+}
+
+// Update final winner
+function updateFinalWinner(winner){
+  finalWinner = winner;
+  const slot = document.getElementById("finalSlot");
+  if(!winner) return;
+  slot.textContent = `Champion: ${winner}`;
+  slot.classList.add("champion");
+}
+
+// Auto-refresh every 3 seconds
+setInterval(loadSlots,3000);
+window.onload = loadSlots;
+</script>
+</body>
+</html>
