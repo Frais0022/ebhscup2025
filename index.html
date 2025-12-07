@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EBHS Interhouse Football</title>
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-database-compat.js"></script>
+
 <style>
 body { font-family: Arial; background:#f0f4f8; text-align:center; margin:0; }
 h1{margin-top:20px;color:#222;}
@@ -21,6 +20,7 @@ h1{margin-top:20px;color:#222;}
 #status{margin-top:20px;font-weight:bold;color:green;}
 input.result-input{width:70px;margin-top:5px;text-align:center;}
 button.save-btn{margin-top:5px;padding:3px 6px;cursor:pointer;}
+
 .champion {
     background: #ffeb3b; 
     border-color: #fbc02d;
@@ -48,7 +48,7 @@ button.save-btn{margin-top:5px;padding:3px 6px;cursor:pointer;}
 📍 Venue: <input id="matchVenue" type="text" value="EBHS Football Field" disabled><br>
 </div>
 
-<p>Representatives claim slots in order. Semi-final pairings are generated automatically once all slots are filled. Enter winners manually.</p>
+<p>Representatives claim slots in order. Semi-final pairings are generated automatically once all slots are filled.</p>
 
 <div class="bracket-container">
     <div class="column">
@@ -76,90 +76,76 @@ button.save-btn{margin-top:5px;padding:3px 6px;cursor:pointer;}
 <div id="status"></div>
 
 <script>
-// --- Firebase Configuration ---
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-// --- Initialize Slots ---
-const slots = ["slot1","slot2","slot3","slot4"];
-const claimedTeams = [null,null,null,null];
-let semiFinalWinners = [null,null];
+let claimedTeams = [null, null, null, null];
+let semiFinalWinners = [null, null];
 let finalWinner = null;
 
-// Load slots from Firebase
-function loadSlots(){
-  db.ref("slots").once("value").then(snapshot=>{
-    const data = snapshot.val() || {};
-    slots.forEach((s,i)=>{
-      const team = data[i] ? data[i].team : null;
-      claimedTeams[i] = team;
-      const slotDiv = document.getElementById(s);
-      slotDiv.textContent = team ? `Slot ${i+1}: ${team}` : `Slot ${i+1}: Available`;
-      slotDiv.classList.toggle("taken", !!team);
-    });
-    generateSemiFinals();
-  });
+// Pick slot without Firebase
+function pickSlot(index){
+    index = index - 1;
+
+    // enforce serial order
+    for(let i=0; i<index; i++){
+        if(!claimedTeams[i]){
+            alert(`Please claim Slot ${i+1} first.`);
+            return;
+        }
+    }
+
+    if(claimedTeams[index]) return;
+
+    const teamName = prompt("Enter your team name:");
+    if(!teamName || !teamName.trim()) return;
+
+    claimedTeams[index] = teamName;
+    updateSlots();
+    document.getElementById("status").textContent = `${teamName} claimed Slot ${index+1}`;
 }
 
-// Claim a slot
-function pickSlot(index){
-  index = index-1;
-  // enforce serial order
-  for(let i=0;i<index;i++){
-    if(!claimedTeams[i]) { alert(`Please claim Slot ${i+1} first.`); return; }
-  }
-  if(claimedTeams[index]) return;
-  const teamName = prompt("Enter your team name:");
-  if(!teamName || !teamName.trim()) return;
-  db.ref(`slots/${index}`).set({team:teamName}).then(()=>{
-    loadSlots();
-    document.getElementById("status").textContent = `${teamName} claimed Slot ${index+1}`;
-  });
+// Update slot UI
+function updateSlots(){
+    for(let i=0; i<4; i++){
+        const slot = document.getElementById(`slot${i+1}`);
+        if(claimedTeams[i]){
+            slot.textContent = `Slot ${i+1}: ${claimedTeams[i]}`;
+            slot.classList.add("taken");
+        }
+    }
+    generateSemiFinals();
 }
 
 // Generate semi-finals
 function generateSemiFinals(){
-  if(claimedTeams.every(t=>t)){
-    document.getElementById("slot1").textContent = `${claimedTeams[0]} vs ${claimedTeams[1]}`;
-    document.getElementById("slot2").textContent = `${claimedTeams[2]} vs ${claimedTeams[3]}`;
-  }
+    if(claimedTeams.every(t => t)){
+        document.getElementById("slot1").textContent = `${claimedTeams[0]} vs ${claimedTeams[1]}`;
+        document.getElementById("slot2").textContent = `${claimedTeams[2]} vs ${claimedTeams[3]}`;
+    }
 }
 
-// Update semi-final winners manually
+// Update semi-final winners
 function updateSemiFinalWinner(index, winner){
-  semiFinalWinners[index] = winner;
-  generateFinal();
+    semiFinalWinners[index] = winner;
+    generateFinal();
 }
 
-// Generate final
+// Generate final match
 function generateFinal(){
-  if(semiFinalWinners.every(w=>w)){
-    document.getElementById("finalSlot").textContent = `Final: ${semiFinalWinners[0]} vs ${semiFinalWinners[1]}`;
-    if(finalWinner){ document.getElementById("finalSlot").textContent += ` | Champion: ${finalWinner}`; }
-  }
+    if(semiFinalWinners[0] && semiFinalWinners[1]){
+        document.getElementById("finalSlot").textContent = 
+            `Final: ${semiFinalWinners[0]} vs ${semiFinalWinners[1]}`;
+    }
 }
 
 // Update final winner
 function updateFinalWinner(winner){
-  finalWinner = winner;
-  const slot = document.getElementById("finalSlot");
-  if(!winner) return;
-  slot.textContent = `Champion: ${winner}`;
-  slot.classList.add("champion");
-}
+    if(!winner) return;
+    finalWinner = winner;
 
-// Auto-refresh every 3 seconds
-setInterval(loadSlots,3000);
-window.onload = loadSlots;
+    const slot = document.getElementById("finalSlot");
+    slot.textContent = `Champion: ${winner}`;
+    slot.classList.add("champion");
+}
 </script>
+
 </body>
 </html>
