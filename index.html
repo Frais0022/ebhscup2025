@@ -5,26 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EBHS Football Competition</title>
 <style>
-body {font-family: Arial, sans-serif; background: linear-gradient(to right,#6dd5ed,#2193b0); padding:20px; text-align:center; color:#fff;}
+body {font-family: Arial,sans-serif;background: linear-gradient(to right,#6dd5ed,#2193b0);color:#fff;text-align:center;padding:20px;}
 h1 {font-size:24px;margin-bottom:15px;}
-.slot-box, .fixture-box, .chat-box {background: rgba(255,255,255,0.9); color:#000; padding:15px; border-radius:12px; margin:12px auto; width:90%; max-width:500px; box-shadow:0 0 15px rgba(0,0,0,0.2);}
-input, button {width:90%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-top:10px; font-size:16px;}
-button {background:#007bff; color:white; border:none; cursor:pointer;}
+.slot-box,.fixture-box,.chat-box {background: rgba(255,255,255,0.9); color:#000; padding:15px; border-radius:12px; margin:12px auto; width:90%; max-width:500px; box-shadow:0 0 15px rgba(0,0,0,0.2);}
+input,button,textarea {width:90%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-top:10px; font-size:16px;}
+button {background:#007bff;color:white;border:none;cursor:pointer;}
 button:disabled {background:gray;}
 img.logo {max-width:50px; max-height:50px; border-radius:50%; margin-left:10px; vertical-align:middle;}
-#fixtures, #finals {margin-top:20px; font-size:18px; font-weight:bold;}
-.match {display:flex; justify-content:space-between; align-items:center; margin:10px 0; flex-wrap:wrap;}
-.match div {display:flex; align-items:center; margin:5px;}
-#countdown {font-size:20px;margin:15px 0;}
 table {width:100%; border-collapse:collapse;}
-th, td {border:1px solid #000; padding:5px; text-align:center;}
-th {background:#007bff; color:#fff;}
-textarea{resize:none;height:60px;width:90%;margin-top:5px;}
+th,td {border:1px solid #000; padding:5px; text-align:center;}
+th {background:#007bff;color:#fff;}
+#countdown {font-size:20px;margin:15px 0;}
 </style>
 </head>
 <body>
 
-<h1>REMI OYEBADE INTERHOUSE FOOTBALL COMPETITION</h1>
+<h1>EBHS INTERHOUSE FOOTBALL COMPETITION</h1>
 <div id="countdown"></div>
 
 <div id="slots"></div>
@@ -46,279 +42,247 @@ textarea{resize:none;height:60px;width:90%;margin-top:5px;}
 
 <input type="password" id="adminPass" placeholder="Enter Admin Password for Reset">
 <button onclick="resetSlots()">Reset All Slots (Admin Only)</button>
-<p>Share this link with teams: <span id="shareLink"></span></p>
 
 <script>
-// CONFIG
-const adminPassword = "REMI2025";
-const competitionDate = new Date("December 8, 2025 08:30:00").getTime();
+// === CONFIG ===
+const adminPassword="REMI2025";
+const competitionDate=new Date("December 8, 2025 08:30:00").getTime();
+const gistRawUrl="YOUR_GIST_RAW_URL"; // Replace with your GitHub Gist raw URL
+const pollInterval=5000; // 5 seconds
 
-// SHAREABLE ID
-const urlParams = new URLSearchParams(window.location.search);
-let compID = urlParams.get("comp") || "EBHS2025"; 
-document.getElementById("shareLink").textContent = window.location.origin + window.location.pathname + "?comp=" + compID;
-
-// COUNTDOWN
+// === COUNTDOWN ===
 function updateCountdown(){
-    let now = new Date().getTime();
-    let distance = competitionDate - now;
-    if(distance < 0){
-        document.getElementById("countdown").textContent = "Competition is LIVE!";
-        clearInterval(countdownInterval);
-        return;
-    }
-    let d = Math.floor(distance/(1000*60*60*24)),
-        h = Math.floor((distance%(1000*60*60*24))/(1000*60*60)),
-        m = Math.floor((distance%(1000*60*60))/(1000*60)),
-        s = Math.floor((distance%(1000*60))/1000);
-    document.getElementById("countdown").textContent = `Competition Starts in: ${d}d ${h}h ${m}m ${s}s`;
+    let now=new Date().getTime();
+    let dist=competitionDate-now;
+    if(dist<0){document.getElementById("countdown").textContent="Competition is LIVE!";clearInterval(countdownInterval);return;}
+    let d=Math.floor(dist/(1000*60*60*24)),
+        h=Math.floor((dist%(1000*60*60*24))/(1000*60*60)),
+        m=Math.floor((dist%(1000*60*60))/(1000*60)),
+        s=Math.floor((dist%(1000*60))/1000);
+    document.getElementById("countdown").textContent=`Competition Starts in: ${d}d ${h}h ${m}m ${s}s`;
 }
-let countdownInterval = setInterval(updateCountdown,1000);
+let countdownInterval=setInterval(updateCountdown,1000);
 
-// STORAGE HELPERS
-function getStorage(){ return JSON.parse(localStorage.getItem("comp_"+compID)||"{}"); }
-function setStorage(data){ localStorage.setItem("comp_"+compID, JSON.stringify(data)); }
-
-// INIT TEAMS
-if(!getStorage().teams){
-    setStorage({
-        teams:[
-            {name:"", logo:""},
-            {name:"", logo:""},
-            {name:"", logo:""},
-            {name:"", logo:""}
-        ],
-        fixtures:{semi:null, final:null, winners:["",""], scores:[[0,0],[0,0]], chat:[[],[]], finalScore:[0,0], finalChat:[]}
-    });
+// === FETCH DATA FROM GIST ===
+async function fetchData(){
+    try{
+        let res=await fetch(gistRawUrl+"?t="+new Date().getTime());
+        let data=await res.json();
+        localStorage.setItem("comp_data",JSON.stringify(data));
+        renderAll();
+    }catch(err){console.error("Failed to fetch data:",err);}
 }
 
-// LOAD CLAIMABLE SLOTS
+// === LOCAL STORAGE HELPERS ===
+function getData(){return JSON.parse(localStorage.getItem("comp_data")||'{"teams":[],"fixtures":{}}');}
+function saveData(data){localStorage.setItem("comp_data",JSON.stringify(data)); /* optionally push to Gist via API */}
+
+// === INITIAL LOAD ===
+fetchData();
+setInterval(fetchData,pollInterval);
+
+// === LOAD CLAIMABLE SLOTS ===
 function loadSlots(){
-    let slotsDiv = document.getElementById("slots");
-    let data = getStorage();
-    slotsDiv.innerHTML = "";
-    data.teams.forEach((team,index) => {
-        if(team.name === ""){
-            slotsDiv.innerHTML += `
+    let slotsDiv=document.getElementById("slots");
+    let data=getData();
+    if(!data.teams || data.teams.length<4){
+        data.teams=[{name:"",logo:""},{name:"",logo:""},{name:"",logo:""},{name:"",logo:""}];
+        saveData(data);
+    }
+    slotsDiv.innerHTML="";
+    data.teams.forEach((team,i)=>{
+        if(team.name===""){
+            slotsDiv.innerHTML+=`
             <div class="slot-box">
-                <h3>Slot ${index+1}</h3>
-                <input id="input${index}" placeholder="Enter team name">
-                <input type="file" id="logo${index}" accept="image/*">
-                <button onclick="claimSlot(${index})">Claim Slot</button>
+            <h3>Slot ${i+1}</h3>
+            <input id="input${i}" placeholder="Enter team name">
+            <input type="file" id="logo${i}" accept="image/*">
+            <button onclick="claimSlot(${i})">Claim Slot</button>
             </div>`;
         } else {
-            let logoHTML = team.logo ? `<img class="logo" src="${team.logo}">` : "";
-            slotsDiv.innerHTML += `
+            let logoHTML=team.logo?`<img class="logo" src="${team.logo}">`:"";
+            slotsDiv.innerHTML+=`
             <div class="slot-box">
-                <h3>Slot ${index+1}</h3>
-                <p><strong>${team.name}</strong> ${logoHTML}</p>
-                <button disabled>Slot Taken</button>
+            <h3>Slot ${i+1}</h3>
+            <p><strong>${team.name}</strong> ${logoHTML}</p>
+            <button disabled>Slot Taken</button>
             </div>`;
         }
     });
     checkReady();
 }
 
-// CLAIM SLOT FUNCTION
+// === CLAIM SLOT ===
 function claimSlot(i){
-    let name = document.getElementById("input"+i).value.trim();
-    if(!name){ alert("Team name cannot be empty."); return; }
-    let fileInput = document.getElementById("logo"+i);
-    let reader = new FileReader();
-    reader.onload = function(e){
-        let logoData = e.target.result;
-        let data = getStorage();
-        data.teams[i] = {name:name, logo:logoData};
-        setStorage(data);
+    let name=document.getElementById("input"+i).value.trim();
+    if(!name){alert("Team name cannot be empty"); return;}
+    let file=document.getElementById("logo"+i);
+    let reader=new FileReader();
+    reader.onload=function(e){
+        let logo=e.target.result;
+        let data=getData();
+        data.teams[i]={name,logo};
+        saveData(data);
         loadSlots();
-    };
-    if(fileInput.files[0]) reader.readAsDataURL(fileInput.files[0]);
+    }
+    if(file.files[0]) reader.readAsDataURL(file.files[0]);
     else {
-        let data = getStorage();
-        data.teams[i] = {name:name, logo:""};
-        setStorage(data);
+        let data=getData();
+        data.teams[i]={name,logo:""};
+        saveData(data);
         loadSlots();
     }
 }
 
-// CHECK IF READY FOR FIXTURES
+// === CHECK READY ===
 function checkReady(){
-    let data = getStorage();
-    document.getElementById("generateBtn").disabled = !data.teams.every(t => t.name !== "");
+    let data=getData();
+    document.getElementById("generateBtn").disabled=!data.teams.every(t=>t.name!=="");
 }
 
-// SHUFFLE & GENERATE FIXTURES
-function shuffle(arr){ for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
+// === SHUFFLE & GENERATE FIXTURES ===
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];} return arr;}
 function generateFixtures(){
-    let data = getStorage();
-    let shuffled = shuffle([...data.teams]);
-    data.fixtures = {semi:[{team1:shuffled[0],team2:shuffled[1]},{team1:shuffled[2],team2:shuffled[3]}], final:null, winners:["",""], scores:[[0,0],[0,0]], chat:[[],[]], finalScore:[0,0], finalChat:[]};
-    setStorage(data);
-    renderFixtures();
+    let data=getData();
+    let shuffled=shuffle([...data.teams]);
+    data.fixtures={semi:[{team1:shuffled[0],team2:shuffled[1]},{team1:shuffled[2],team2:shuffled[3]}],final:null,winners:["",""],scores:[[0,0],[0,0]],chat:[[],[]],finalScore:[0,0],finalChat:[]};
+    saveData(data);
+    renderAll();
 }
 
-// RENDER FIXTURES, SCORES, CHATS, LEADERBOARDS
-function renderFixtures(){
-    let data = getStorage();
-    let fixturesDiv = document.getElementById("fixtures");
-    let finalsDiv = document.getElementById("finals");
-    let f = data.fixtures;
-
-    // SEMI-FINALS
-    if(f.semi){
-        fixturesDiv.style.display="block";
-        fixturesDiv.innerHTML="<p>SEMI-FINAL FIXTURES</p>";
-        f.semi.forEach((match, idx) => {
-            let s0=f.scores[idx][0], s1=f.scores[idx][1];
-            fixturesDiv.innerHTML += `
-            <div class="fixture-box match">
-                <div><strong>${match.team1.name}</strong> ${match.team1.logo?`<img class="logo" src="${match.team1.logo}">`:""}</div>
-                <div>vs</div>
-                <div><strong>${match.team2.name}</strong> ${match.team2.logo?`<img class="logo" src="${match.team2.logo}">`:""}</div>
-                <div>Score: <input type="number" min="0" value="${s0}" onchange="updateScore(${idx},0,this.value)"> - <input type="number" min="0" value="${s1}" onchange="updateScore(${idx},1,this.value)"></div>
-                <div>
-                    <strong>Scorers Chat:</strong>
-                    <table class="chat-box" id="chat${idx}">
-                        <tr><th>Time</th><th>Scorer</th><th>Goals</th></tr>
-                        ${f.chat[idx].map(c=>`<tr><td>${c.time}</td><td>${c.scorer}</td><td>${c.goals}</td></tr>`).join("")}
-                    </table>
-                    <input id="msg${idx}" placeholder="Scorer Name">
-                    <input type="number" id="goals${idx}" placeholder="Goals" min="1" value="1">
-                    <button onclick="sendChat(${idx})">Send</button>
-                </div>
-            </div>`;
-        });
-    } else fixturesDiv.style.display="none";
-
-    // FINAL MATCH
-    if(f.final){
-        let fs0=f.finalScore[0], fs1=f.finalScore[1];
-        finalsDiv.style.display="block";
-        finalsDiv.innerHTML = `
-        <p>FINAL MATCH</p>
-        <div class="fixture-box match">
-            <div><strong>${f.final.team1.name}</strong> ${f.final.team1.logo?`<img class="logo" src="${f.final.team1.logo}">`:""}</div>
-            <div>vs</div>
-            <div><strong>${f.final.team2.name}</strong> ${f.final.team2.logo?`<img class="logo" src="${f.final.team2.logo}">`:""}</div>
-            <div>Score: <input type="number" min="0" value="${fs0}" onchange="updateFinalScore(0,this.value)"> - <input type="number" min="0" value="${fs1}" onchange="updateFinalScore(1,this.value)"></div>
-            <div>
-                <strong>Scorers Chat:</strong>
-                <table class="chat-box" id="finalChat">
-                    <tr><th>Time</th><th>Scorer</th><th>Goals</th></tr>
-                    ${f.finalChat.map(c=>`<tr><td>${c.time}</td><td>${c.scorer}</td><td>${c.goals}</td></tr>`).join("")}
-                </table>
-                <input id="finalMsg" placeholder="Scorer Name">
-                <input type="number" id="finalGoals" placeholder="Goals" min="1" value="1">
-                <button onclick="sendFinalChat()">Send</button>
-            </div>
-        </div>`;
-    } else finalsDiv.style.display="none";
-
+// === RENDER ALL ===
+function renderAll(){
+    loadSlots();
+    renderFixtures();
     updateLeaderboards();
     updateGlobalChat();
 }
 
-// SCORE & CHAT FUNCTIONS
-function updateScore(matchIdx, teamIdx, val){
-    let data=getStorage();
-    data.fixtures.scores[matchIdx][teamIdx] = parseInt(val)||0;
-    let s0=data.fixtures.scores[matchIdx][0], s1=data.fixtures.scores[matchIdx][1];
-    if(s0>s1) data.fixtures.winners[matchIdx]=data.fixtures.semi[matchIdx].team1.name;
-    else if(s1>s0) data.fixtures.winners[matchIdx]=data.fixtures.semi[matchIdx].team2.name;
-    else data.fixtures.winners[matchIdx]="";
+// === FIXTURES RENDERING, SCORES & CHAT ===
+function renderFixtures(){
+    let data=getData();
+    let f=data.fixtures;
+    let fixturesDiv=document.getElementById("fixtures");
+    let finalsDiv=document.getElementById("finals");
+    if(f.semi){
+        fixturesDiv.style.display="block";
+        fixturesDiv.innerHTML="<p>SEMI-FINAL FIXTURES</p>";
+        f.semi.forEach((m,idx)=>{
+            let s0=f.scores[idx][0],s1=f.scores[idx][1];
+            fixturesDiv.innerHTML+=`
+            <div class="fixture-box">
+            <div><strong>${m.team1.name}</strong> ${m.team1.logo?`<img class="logo" src="${m.team1.logo}">`:""}</div>
+            <div>vs</div>
+            <div><strong>${m.team2.name}</strong> ${m.team2.logo?`<img class="logo" src="${m.team2.logo}">`:""}</div>
+            <div>Score: <input type="number" min="0" value="${s0}" onchange="updateScore(${idx},0,this.value)"> - <input type="number" min="0" value="${s1}" onchange="updateScore(${idx},1,this.value)"></div>
+            <div>
+            <strong>Scorers Chat:</strong>
+            <table><tr><th>Time</th><th>Scorer</th><th>Goals</th></tr>
+            ${f.chat[idx].map(c=>`<tr><td>${c.time}</td><td>${c.scorer}</td><td>${c.goals}</td></tr>`).join("")}
+            </table>
+            <input id="msg${idx}" placeholder="Scorer Name">
+            <input type="number" id="goals${idx}" placeholder="Goals" min="1" value="1">
+            <button onclick="sendChat(${idx})">Send</button>
+            </div>
+            </div>`;
+        });
+    } else fixturesDiv.style.display="none";
+
+    // FINAL
+    if(f.final){
+        let fs0=f.finalScore[0], fs1=f.finalScore[1];
+        finalsDiv.style.display="block";
+        finalsDiv.innerHTML=`
+        <p>FINAL MATCH</p>
+        <div class="fixture-box">
+        <div><strong>${f.final.team1.name}</strong> ${f.final.team1.logo?`<img class="logo" src="${f.final.team1.logo}">`:""}</div>
+        <div>vs</div>
+        <div><strong>${f.final.team2.name}</strong> ${f.final.team2.logo?`<img class="logo" src="${f.final.team2.logo}">`:""}</div>
+        <div>Score: <input type="number" min="0" value="${fs0}" onchange="updateFinalScore(0,this.value)"> - <input type="number" min="0" value="${fs1}" onchange="updateFinalScore(1,this.value)"></div>
+        <div>
+        <strong>Scorers Chat:</strong>
+        <table><tr><th>Time</th><th>Scorer</th><th>Goals</th></tr>
+        ${f.finalChat.map(c=>`<tr><td>${c.time}</td><td>${c.scorer}</td><td>${c.goals}</td></tr>`).join("")}
+        </table>
+        <input id="finalMsg" placeholder="Scorer Name">
+        <input type="number" id="finalGoals" placeholder="Goals" min="1" value="1">
+        <button onclick="sendFinalChat()">Send</button>
+        </div>
+        </div>`;
+    } else finalsDiv.style.display="none";
+}
+
+// === UPDATE SCORES & CHATS ===
+function updateScore(matchIdx,teamIdx,val){
+    let data=getData();
+    data.fixtures.scores[matchIdx][teamIdx]=parseInt(val)||0;
+    let s0=data.fixtures.scores[matchIdx][0],s1=data.fixtures.scores[matchIdx][1];
+    data.fixtures.winners[matchIdx]=s0>s1?data.fixtures.semi[matchIdx].team1.name:s1>s0?data.fixtures.semi[matchIdx].team2.name:"";
     if(data.fixtures.winners[0] && data.fixtures.winners[1]){
         let t1=data.fixtures.semi[0].team1.name===data.fixtures.winners[0]?data.fixtures.semi[0].team1:data.fixtures.semi[0].team2;
         let t2=data.fixtures.semi[1].team1.name===data.fixtures.winners[1]?data.fixtures.semi[1].team1:data.fixtures.semi[1].team2;
         data.fixtures.final={team1:t1,team2:t2};
     } else data.fixtures.final=null;
-    setStorage(data);
-    renderFixtures();
+    saveData(data); renderAll();
 }
 
-function updateFinalScore(teamIdx,val){
-    let data=getStorage();
-    data.fixtures.finalScore[teamIdx]=parseInt(val)||0;
-    setStorage(data); renderFixtures();
-}
+function updateFinalScore(teamIdx,val){let data=getData();data.fixtures.finalScore[teamIdx]=parseInt(val)||0;saveData(data);renderAll();}
 
 function sendChat(idx){
     let scorer=document.getElementById("msg"+idx).value.trim();
     let goals=parseInt(document.getElementById("goals"+idx).value)||1;
-    if(!scorer) return;
-    let data=getStorage();
-    data.fixtures.chat[idx].push({time:new Date().toLocaleTimeString(), scorer, goals});
-    setStorage(data);
-    document.getElementById("msg"+idx).value="";
-    renderFixtures();
+    if(!scorer)return;
+    let data=getData();
+    data.fixtures.chat[idx].push({time:new Date().toLocaleTimeString(),scorer,goals});
+    saveData(data);
+    document.getElementById("msg"+idx].value="";
+    renderAll();
 }
 
 function sendFinalChat(){
     let scorer=document.getElementById("finalMsg").value.trim();
     let goals=parseInt(document.getElementById("finalGoals").value)||1;
-    if(!scorer) return;
-    let data=getStorage();
-    data.fixtures.finalChat.push({time:new Date().toLocaleTimeString(), scorer, goals});
-    setStorage(data);
+    if(!scorer)return;
+    let data=getData();
+    data.fixtures.finalChat.push({time:new Date().toLocaleTimeString(),scorer,goals});
+    saveData(data);
     document.getElementById("finalMsg").value="";
-    renderFixtures();
+    renderAll();
 }
 
-// LEADERBOARDS
-function generateMatchLeaderboard(matchIdx){
-    let data=getStorage();
-    let chat=data.fixtures.chat[matchIdx];
+// === LEADERBOARDS ===
+function generateLeaderboard(chat,teams){
     let scores={};
-    chat.forEach(c=>{if(!scores[c.scorer]) scores[c.scorer]={team:data.fixtures.semi[matchIdx].team1.name+" / "+data.fixtures.semi[matchIdx].team2.name, goals:0}; scores[c.scorer].goals+=c.goals;});
+    chat.forEach(c=>{if(!scores[c.scorer]) scores[c.scorer]={team:teams,goals:0};scores[c.scorer].goals+=c.goals;});
     let ranking=Object.keys(scores).map(name=>({name,...scores[name]})).sort((a,b)=>b.goals-a.goals);
-    return `<table>
-        <tr><th>Rank</th><th>Scorer</th><th>Team(s)</th><th>Goals</th></tr>
-        ${ranking.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.team}</td><td>${r.goals}</td></tr>`).join("")}
-    </table>`;
-}
-
-function generateGlobalLeaderboard(){
-    let data=getStorage();
-    let scores={};
-    data.fixtures.semi?.forEach((m,idx)=>{data.fixtures.chat[idx].forEach(c=>{if(!scores[c.scorer]) scores[c.scorer]={team:m.team1.name+" / "+m.team2.name, goals:0}; scores[c.scorer].goals+=c.goals;});});
-    data.fixtures.finalChat.forEach(c=>{let t=data.fixtures.final?data.fixtures.final.team1.name+" / "+data.fixtures.final.team2.name:"Final"; if(!scores[c.scorer]) scores[c.scorer]={team:t, goals:0}; scores[c.scorer].goals+=c.goals;});
-    let ranking=Object.keys(scores).map(name=>({name,...scores[name]})).sort((a,b)=>b.goals-a.goals);
-    return `<table>
-        <tr><th>Rank</th><th>Scorer</th><th>Team(s)</th><th>Goals</th></tr>
-        ${ranking.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.team}</td><td>${r.goals}</td></tr>`).join("")}
-    </table>`;
+    return `<table><tr><th>Rank</th><th>Scorer</th><th>Team(s)</th><th>Goals</th></tr>${ranking.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.team}</td><td>${r.goals}</td></tr>`).join("")}</table>`;
 }
 
 function updateLeaderboards(){
-    let data=getStorage();
-    document.getElementById("matchLeaderboards").innerHTML=data.fixtures.semi?.map((m,idx)=>`<div class="slot-box"><h4>Match ${idx+1} Scorers Ranking</h4>${generateMatchLeaderboard(idx)}</div>`).join("")||"";
-    document.getElementById("globalLeaderboardTable").innerHTML=generateGlobalLeaderboard();
+    let data=getData();
+    document.getElementById("matchLeaderboards").innerHTML=data.fixtures.semi?.map((m,idx)=>`<div class="slot-box"><h4>Match ${idx+1} Scorers Ranking</h4>${generateLeaderboard(data.fixtures.chat[idx],m.team1.name+" / "+m.team2.name)}</div>`).join("")||"";
+    let allChats=[],teamsArr=[];
+    data.fixtures.semi?.forEach((m,idx)=>{data.fixtures.chat[idx].forEach(c=>allChats.push(c)); teamsArr.push(m.team1.name+" / "+m.team2.name);});
+    data.fixtures.finalChat.forEach(c=>allChats.push(c)); if(data.fixtures.final)teamsArr.push(data.fixtures.final.team1.name+" / "+data.fixtures.final.team2.name);
+    document.getElementById("globalLeaderboardTable").innerHTML=generateLeaderboard(allChats,teamsArr.join(", "));
 }
 
-// GLOBAL CHAT
+// === GLOBAL CHAT ===
 function updateGlobalChat(){
-    let data=getStorage();
-    let globalDiv=document.getElementById("globalChat");
+    let data=getData();
     let messages=[];
-    data.fixtures.semi?.forEach((match,idx)=>{data.fixtures.chat[idx].forEach(c=>{messages.push({time:c.time, teams:match.team1.name+" / "+match.team2.name, scorer:c.scorer, goals:c.goals});});});
-    data.fixtures.finalChat.forEach(c=>{let t=data.fixtures.final?data.fixtures.final.team1.name+" / "+data.fixtures.final.team2.name:"Final"; messages.push({time:c.time, teams:t, scorer:c.scorer, goals:c.goals});});
-    globalDiv.innerHTML = `<table>
-        <tr><th>Time</th><th>Team(s)</th><th>Scorer</th><th>Goals</th></tr>
-        ${messages.map(m=>`<tr><td>${m.time}</td><td>${m.teams}</td><td>${m.scorer}</td><td>${m.goals}</td></tr>`).join("")}
-    </table>`;
+    data.fixtures.semi?.forEach((m,idx)=>data.fixtures.chat[idx].forEach(c=>messages.push({time:c.time,teams:m.team1.name+" / "+m.team2.name,scorer:c.scorer,goals:c.goals})));
+    data.fixtures.finalChat.forEach(c=>messages.push({time:c.time,teams:data.fixtures.final?data.fixtures.final.team1.name+" / "+data.fixtures.final.team2.name:"Final",scorer:c.scorer,goals:c.goals}));
+    document.getElementById("globalChat").innerHTML=`<table><tr><th>Time</th><th>Team(s)</th><th>Scorer</th><th>Goals</th></tr>${messages.map(m=>`<tr><td>${m.time}</td><td>${m.teams}</td><td>${m.scorer}</td><td>${m.goals}</td></tr>`).join("")}</table>`;
 }
 
-// ADMIN RESET
+// === ADMIN RESET ===
 function resetSlots(){
     let pass=document.getElementById("adminPass").value;
-    if(pass!==adminPassword){alert("Incorrect admin password!"); return;}
-    if(!confirm("Are you sure you want to reset all slots and data?")) return;
-    localStorage.removeItem("comp_"+compID);
-    location.reload();
+    if(pass!==adminPassword){alert("Incorrect admin password!");return;}
+    if(!confirm("Reset all data?")) return;
+    fetch(gistRawUrl,{method:'PUT',body:'{}'}).finally(()=>{fetchData();});
 }
-
-loadSlots();
-renderFixtures();
 </script>
-
 </body>
 </html>
