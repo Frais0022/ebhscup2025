@@ -7,7 +7,7 @@
 <style>
 body {font-family: Arial; background: linear-gradient(to right,#6dd5ed,#2193b0); padding:20px; text-align:center; color:#fff;}
 h1 {font-size:24px;margin-bottom:15px;}
-.slot-box, .fixture-box, .chat-box {background: rgba(255,255,255,0.9); color:#000; padding:15px; border-radius:12px; margin:12px auto; width:90%; max-width:450px; box-shadow:0 0 15px rgba(0,0,0,0.2);}
+.slot-box, .fixture-box, .chat-box {background: rgba(255,255,255,0.9); color:#000; padding:15px; border-radius:12px; margin:12px auto; width:90%; max-width:500px; box-shadow:0 0 15px rgba(0,0,0,0.2);}
 input, button {width:90%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-top:10px; font-size:16px;}
 button {background:#007bff; color:white; border:none; cursor:pointer;}
 button:disabled {background:gray;}
@@ -157,7 +157,7 @@ function generateFixtures(){
     renderFixtures();
 }
 
-// ---- RENDER FIXTURES & SCORES ----
+// ---- RENDER FIXTURES, SCORES, CHATS, LEADERBOARDS ----
 function renderFixtures(){
     let data = getStorage();
     let fixturesDiv = document.getElementById("fixtures");
@@ -249,7 +249,7 @@ function sendChat(idx){
     let data=getStorage();
     data.fixtures.chat[idx].push({time:new Date().toLocaleTimeString(), scorer, goals});
     setStorage(data);
-    document.getElementById("msg"+idx].value="";
+    document.getElementById("msg"+idx).value="";
     renderFixtures();
 }
 
@@ -314,4 +314,3 @@ function resetSlots(){
     if(pass!==adminPassword){alert("Incorrect admin password!"); return;}
     if(!confirm("Are you sure you want to reset all slots and data?")) return;
     localStorage.removeItem("comp_"+compID);
-    location
