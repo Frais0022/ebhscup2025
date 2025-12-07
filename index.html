@@ -17,33 +17,21 @@ img.logo{max-width:50px;max-height:50px;border-radius:50%;margin-left:10px;verti
 .match div{display:flex;align-items:center;margin:5px;}
 #countdown{font-size:20px;margin:15px 0;}
 textarea{resize:none;height:60px;}
-table{width:100%;border-collapse:collapse;}
-th,td{border:1px solid #000;padding:5px;text-align:center;}
-th{background:#007bff;color:#fff;}
 </style>
 </head>
 <body>
 
 <h1>EBHS INTERHOUSE FOOTBALL COMPETITION</h1>
 <div id="countdown"></div>
-
 <div id="slots"></div>
 <button id="generateBtn" onclick="generateFixtures()" disabled>Generate Semi-Final Fixtures</button>
-
 <div id="fixtures"></div>
 <div id="finals"></div>
 
-<!-- Leaderboards -->
-<div id="matchLeaderboards"></div>
-<div id="globalLeaderboard" class="slot-box">
-  <h3>Competition Scorers Ranking</h3>
-  <div id="globalLeaderboardTable"></div>
-</div>
-
-<!-- Global Chat -->
+<!-- Global Competition Chat -->
 <div id="competitionChat" class="slot-box">
   <h3>Competition Scorers Chat</h3>
-  <div id="globalChat"></div>
+  <div class="chat-box" id="globalChat"></div>
 </div>
 
 <input type="password" id="adminPass" placeholder="Enter Admin Password for Reset">
@@ -132,7 +120,7 @@ function generateFixtures(){
     setStorage(data); renderFixtures();
 }
 
-// ---- RENDER FIXTURES ----
+// ---- RENDER FIXTURES WITH WINNER HIGHLIGHT ----
 function renderFixtures(){
     let data=getStorage();
     let fixturesDiv=document.getElementById("fixtures");
@@ -159,12 +147,8 @@ function renderFixtures(){
                 </div>
                 <div>
                     <strong>Scorers Chat:</strong>
-                    <table class="chat-box" id="chat${idx}">
-                        <tr><th>Time</th><th>Scorer</th><th>Goals</th></tr>
-                        ${f.chat[idx].map(c=>`<tr><td>${c.time}</td><td>${c.scorer}</td><td>${c.goals}</td></tr>`).join("")}
-                    </table>
-                    <input id="msg${idx}" placeholder="Scorer Name">
-                    <input type="number" id="goals${idx}" placeholder="Goals" min="1" value="1">
+                    <div class="chat-box" id="chat${idx}">${f.chat[idx].map(c=>`<p>${c}</p>`).join("")}</div>
+                    <input id="msg${idx}" placeholder="Enter scorer message">
                     <button onclick="sendChat(${idx})">Send</button>
                 </div>
             </div>`;
@@ -190,18 +174,14 @@ function renderFixtures(){
                 </div>
                 <div>
                     <strong>Scorers Chat:</strong>
-                    <table class="chat-box" id="finalChat">
-                        <tr><th>Time</th><th>Scorer</th><th>Goals</th></tr>
-                        ${f.finalChat.map(c=>`<tr><td>${c.time}</td><td>${c.scorer}</td><td>${c.goals}</td></tr>`).join("")}
-                    </table>
-                    <input id="finalMsg" placeholder="Scorer Name">
-                    <input type="number" id="finalGoals" placeholder="Goals" min="1" value="1">
+                    <div class="chat-box" id="finalChat">${f.finalChat.map(c=>`<p>${c}</p>`).join("")}</div>
+                    <input id="finalMsg" placeholder="Enter scorer message">
                     <button onclick="sendFinalChat()">Send</button>
                 </div>
             </div>`;
     }else finalsDiv.style.display="none";
 
-    updateLeaderboards();
+    // Update global competition chat
     updateGlobalChat();
 }
 
@@ -227,70 +207,58 @@ function updateFinalScore(teamIdx,val){
     setStorage(data); renderFixtures();
 }
 
-// ---- CHAT FUNCTIONS ----
+// ---- CHAT ----
 function sendChat(idx){
-    let scorer=document.getElementById("msg"+idx).value.trim();
-    let goals=parseInt(document.getElementById("goals"+idx).value)||1;
-    if(!scorer) return;
+    let msg=document.getElementById("msg"+idx).value.trim();
+    if(!msg) return;
     let data=getStorage();
-    let now=new Date();
-    data.fixtures.chat[idx].push({time:now.toLocaleTimeString(), scorer, goals});
+    data.fixtures.chat[idx].push(msg);
     setStorage(data);
     document.getElementById("msg"+idx).value="";
     renderFixtures();
 }
 
 function sendFinalChat(){
-    let scorer=document.getElementById("finalMsg").value.trim();
-    let goals=parseInt(document.getElementById("finalGoals").value)||1;
-    if(!scorer) return;
+    let msg=document.getElementById("finalMsg").value.trim();
+    if(!msg) return;
     let data=getStorage();
-    let now=new Date();
-    data.fixtures.finalChat.push({time:now.toLocaleTimeString(), scorer, goals});
+    data.fixtures.finalChat.push(msg);
     setStorage(data);
     document.getElementById("finalMsg").value="";
     renderFixtures();
 }
 
-// ---- LEADERBOARDS ----
-function generateMatchLeaderboard(matchIdx){
-    let data=getStorage();
-    let chat=data.fixtures.chat[matchIdx];
-    let scores={};
-    chat.forEach(c=>{if(!scores[c.scorer]) scores[c.scorer]={team:data.fixtures.semi[matchIdx].team1.name+" / "+data.fixtures.semi[matchIdx].team2.name, goals:0}; scores[c.scorer].goals+=c.goals;});
-    let ranking=Object.keys(scores).map(name=>({name,...scores[name]})).sort((a,b)=>b.goals-a.goals);
-    return `<table>
-        <tr><th>Rank</th><th>Scorer</th><th>Team(s)</th><th>Goals</th></tr>
-        ${ranking.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.team}</td><td>${r.goals}</td></tr>`).join("")}
-    </table>`;
-}
-
-function generateGlobalLeaderboard(){
-    let data=getStorage();
-    let scores={};
-    data.fixtures.semi?.forEach((m,idx)=>{data.fixtures.chat[idx].forEach(c=>{if(!scores[c.scorer]) scores[c.scorer]={team:m.team1.name+" / "+m.team2.name, goals:0}; scores[c.scorer].goals+=c.goals;});});
-    data.fixtures.finalChat.forEach(c=>{if(!scores[c.scorer]) scores[c.scorer]={team:data.fixtures.final?data.fixtures.final.team1.name+" / "+data.fixtures.final.team2.name:"Final", goals:0}; scores[c.scorer].goals+=c.goals;});
-    let ranking=Object.keys(scores).map(name=>({name,...scores[name]})).sort((a,b)=>b.goals-a.goals);
-    return `<table>
-        <tr><th>Rank</th><th>Scorer</th><th>Team(s)</th><th>Goals</th></tr>
-        ${ranking.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.team}</td><td>${r.goals}</td></tr>`).join("")}
-    </table>`;
-}
-
-function updateLeaderboards(){
-    let data=getStorage();
-    document.getElementById("matchLeaderboards").innerHTML=data.fixtures.semi?.map((m,idx)=>`<div class="slot-box"><h4>Match ${idx+1} Scorers Ranking</h4>${generateMatchLeaderboard(idx)}</div>`).join("")||"";
-    document.getElementById("globalLeaderboardTable").innerHTML=generateGlobalLeaderboard();
-}
-
-// ---- GLOBAL CHAT ----
+// ---- GLOBAL COMPETITION CHAT ----
 function updateGlobalChat(){
     let data=getStorage();
     let globalDiv=document.getElementById("globalChat");
     let messages=[];
-    data.fixtures.semi?.forEach((match,idx)=>{data.fixtures.chat[idx].forEach(c=>{messages.push({time:c.time, teams:match.team1.name+" / "+match.team2.name, scorer:c.scorer, goals:c.goals});});});
-    data.fixtures.finalChat.forEach(c=>{let t=data.fixtures.final?data.fixtures.final.team1.name+" / "+data.fixtures.final.team2.name:"Final"; messages.push({time:c.time, teams:t, scorer:c.scorer, goals:c.goals});});
 
-    globalDiv.innerHTML = `<table>
-        <tr><th>Time</th><th>Team(s)</th><th>Scorer</th><th>Goals</th></tr>
-        ${messages.map(m=>`<tr><td>${m.time}</td><td>${m.teams}</td><td>${m.scorer}</td><td>${m.goals}</td></tr
+    data.fixtures.semi?.forEach((match,idx)=>{
+        data.fixtures.chat[idx].forEach(msg=>{
+            messages.push(`${match.team1.name} / ${match.team2.name} Scorer: ${msg}`);
+        });
+    });
+
+    data.fixtures.finalChat.forEach(msg=>{
+        let finalTeams=data.fixtures.final?`${data.fixtures.final.team1.name} / ${data.fixtures.final.team2.name}`:"Final";
+        messages.push(`${finalTeams} Scorer: ${msg}`);
+    });
+
+    globalDiv.innerHTML=messages.map(m=>`<p>${m}</p>`).join("");
+}
+
+// ---- RESET ----
+function resetSlots(){
+    let pass=document.getElementById("adminPass").value;
+    if(pass!==adminPassword){alert("Incorrect admin password!"); return;}
+    setStorage({teams:[{name:"",logo:""},{name:"",logo:""},{name:"",logo:""},{name:"",logo:""}],fixtures:{semi:null,final:null,winners:["",""],scores:[[0,0],[0,0]],chat:[[],[]],finalScore:[0,0],finalChat:[]}})
+    renderFixtures(); loadSlots();
+}
+
+// ---- INITIAL RENDER ----
+loadSlots(); renderFixtures();
+window.addEventListener('storage',()=>{loadSlots(); renderFixtures();});
+</script>
+</body>
+</html>
