@@ -1,116 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>EBHS Interhouse Football — Live (Gist + Actions)</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>EBHS Interhouse Football — Editable Scores & Auto Scorer Tables</title>
 <style>
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:linear-gradient(135deg,#1e90ff,#7dd3fc);color:#022;text-align:center;padding:18px;}
-  h1{color:#fff;margin-bottom:6px}
-  .card{background:#fff;padding:12px;border-radius:10px;max-width:920px;margin:12px auto;box-shadow:0 6px 18px rgba(0,0,0,0.12)}
-  .flex{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-  input,button,select,textarea{font-size:15px;padding:8px;border-radius:8px;border:1px solid #cbd5e1}
-  button{background:#0369a1;color:#fff;border:none;cursor:pointer}
-  button.secondary{background:#334155}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  .slot{width:210px;padding:10px;text-align:left}
-  .logo{width:46px;height:46px;border-radius:8px;object-fit:cover;margin-left:8px;vertical-align:middle}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(135deg,#0ea5e9,#60a5fa);color:#042;padding:18px;margin:0;}
+  h1{color:#fff;margin:0 0 12px 0;text-align:center}
+  .card{background:#fff;border-radius:10px;padding:12px;max-width:980px;margin:12px auto;box-shadow:0 8px 24px rgba(2,6,23,0.12)}
+  .flex{display:flex;gap:10px;flex-wrap:wrap}
+  input,button,textarea,select{font-size:14px;padding:8px;border-radius:8px;border:1px solid #cbd5e1}
+  button{background:#0369a1;color:white;border:none;cursor:pointer}
+  button.secondary{background:#475569}
+  button:disabled{opacity:0.55;cursor:not-allowed}
+  .slot{width:220px;padding:10px}
+  .logo{width:48px;height:48px;border-radius:8px;object-fit:cover;margin-left:8px}
   table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{border:1px solid #e2e8f0;padding:6px;text-align:center}
+  th,td{border:1px solid #e6eef8;padding:6px;text-align:center}
   th{background:#0369a1;color:#fff}
   .muted{color:#475569;font-size:13px}
   .small{font-size:13px}
-  #status{font-size:13px;margin-top:8px;color:#072}
+  #status{font-size:13px;margin-top:8px;color:#065f46}
   #error{color:#b91c1c}
+  label{display:block;margin-top:8px;font-weight:600}
+  .right{float:right}
 </style>
 </head>
 <body>
-  <h1>EBHS INTERHOUSE FOOTBALL — Live</h1>
-  <div class="card">
-    <div class="muted">Shareable link (open on any device): <code id="shareLink"></code></div>
-    <div id="countdown" class="small" style="margin-top:8px"></div>
-  </div>
+<h1>EBHS Interhouse Football — Editable Scores (Model A)</h1>
 
-  <div class="card">
-    <h3>Team Slots (representatives claim slots)</h3>
-    <div id="slotsRow" class="flex"></div>
-    <div style="margin-top:8px">
-      <button id="generateBtn" onclick="generateFixtures()" disabled>Generate Semi-Final Fixtures</button>
-    </div>
+<div class="card">
+  <div class="flex" style="justify-content:space-between;align-items:center">
+    <div class="small muted">Shareable link: <code id="shareLink"></code></div>
+    <div id="countdown" class="small muted"></div>
   </div>
+</div>
 
-  <div class="card" id="fixturesCard" style="display:none">
-    <h3>Semi-Final Fixtures</h3>
-    <div id="fixtures"></div>
-  </div>
+<div class="card">
+  <h3>Team Slots — Representatives Claim Here</h3>
+  <div id="slotsRow" class="flex"></div>
+  <div style="margin-top:10px"><button id="generateBtn" onclick="generateFixtures()" disabled>Generate Semi-Final Fixtures</button></div>
+</div>
 
-  <div class="card" id="finalCard" style="display:none">
-    <h3>Final</h3>
-    <div id="finals"></div>
-  </div>
+<div class="card" id="fixturesCard" style="display:none">
+  <h3>Semi-Finals</h3>
+  <div id="fixtures"></div>
+</div>
 
-  <div class="card">
-    <h3>Per-Match Leaderboards</h3>
-    <div id="matchLeaderboards"></div>
-  </div>
+<div class="card" id="finalCard" style="display:none">
+  <h3>Final</h3>
+  <div id="finals"></div>
+</div>
 
-  <div class="card">
-    <h3>Competition Scorers Ranking</h3>
-    <div id="globalLeaderboardTable"></div>
-  </div>
+<div class="card">
+  <h3>Per-match Leaderboards</h3>
+  <div id="matchLeaderboards"></div>
+</div>
 
-  <div class="card">
-    <h3>Competition Scorers Chat (all matches)</h3>
-    <div id="globalChat"></div>
-  </div>
+<div class="card">
+  <h3>Competition Scorers Ranking</h3>
+  <div id="globalLeaderboardTable"></div>
+</div>
 
-  <div class="card small">
-    <div style="margin-bottom:6px">Admin: Reset (protected)</div>
-    <input id="adminPass" type="password" placeholder="Admin password" />
-    <button onclick="resetEverything()">Reset (admin)</button>
-    <div id="status"></div>
-    <div id="error"></div>
+<div class="card">
+  <h3>Competition Scorers Chat (auto from scorers)</h3>
+  <div id="globalChat"></div>
+</div>
+
+<div class="card small">
+  <label>Admin actions (password required)</label>
+  <input id="adminPass" type="password" placeholder="Admin password (REMI2025)" />
+  <div style="margin-top:8px;display:flex;gap:8px">
+    <button onclick="resetEverything()" class="secondary">Reset All Data</button>
+    <button onclick="forceFetch()">Sync Now</button>
   </div>
+  <div id="status"></div>
+  <div id="error"></div>
+</div>
 
 <script>
-/* ========= CONFIG — REPLACE THESE =========
- - GIST_RAW_URL: raw URL of your public gist (HTTPS).
- - WORKFLOW_PROXY_URL: URL of your proxy that triggers the GitHub Actions workflow (recommended).
-   The proxy endpoint should accept a POST with JSON body { payload: <the full JSON payload to write to gist> }
-   and then call the GitHub API to patch the gist. The proxy keeps your GH token secret.
- - If you DON'T have a proxy, you can set GH_TOKEN_INSECURE (NOT RECOMMENDED). The code will attempt
-   to call the GitHub Actions dispatch or patch the gist directly — but this exposes your token.
-========================================== */
-const GIST_RAW_URL = "https://gist.githubusercontent.com/USERNAME/GISTID/raw/competition.json"; // <<-- REPLACE
-const WORKFLOW_PROXY_URL = ""; // <<-- REPLACE with your proxy endpoint (recommended). If empty, direct API will be attempted (insecure)
-const GH_TOKEN_INSECURE = ""; // <<-- INSECURE: only set for testing if you understand risks
-const ADMIN_PASSWORD = "REMI2025";     // admin password
-const POLL_MS = 5000;                  // poll interval
+/* ====== CONFIG ====== */
+const BIN_ID = "6935e85143b1c97be9de3eb2"; // Your JSONBin ID
+const API_KEY = "$2a$10$ez2mNhQs2BylwsUGJgfaceuUHDJnBUnWu6mwdgavcko3ZQTMXyKlG"; // Your JSONBin API key
+const ADMIN_PASSWORD = "REMI2025";
+const POLL_MS = 5000;
 const COMP_DATE = new Date("December 8, 2025 08:30:00").getTime();
+/* ================== */
 
-/* ======== App state (local) ======== */
-let remoteData = null; // full JSON from gist
-let lastFetchAt = 0;
-let isPushing = false;
+let remoteData = null;
+let pushing = false;
 
-/* ======== Helpers ======== */
-function setStatus(msg, err=false){
-  document.getElementById("status").textContent = msg || "";
-  document.getElementById("error").textContent = err ? msg : "";
+/* Helpers */
+function setStatus(msg, isError=false){
+  document.getElementById("status").textContent = isError ? "" : msg;
+  document.getElementById("error").textContent = isError ? msg : "";
 }
 function shareLinkUpdate(){
-  const url = new URL(window.location.href);
-  if(!url.searchParams.get('comp')) url.searchParams.set('comp','EBHS2025');
-  window.history.replaceState({},'',url.toString());
-  document.getElementById('shareLink').textContent = url.toString();
+  const u = new URL(location.href);
+  if(!u.searchParams.get('comp')) u.searchParams.set('comp','EBHS2025');
+  history.replaceState({},'',u.toString());
+  document.getElementById('shareLink').textContent = u.toString();
 }
-function nowTime(){return new Date().toLocaleTimeString();}
+function escapeHtml(s){ if(s===undefined||s===null) return ""; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-/* ======== Countdown ======== */
+/* Countdown */
 function updateCountdown(){
   const el = document.getElementById('countdown');
   const diff = COMP_DATE - Date.now();
-  if(diff<=0){ el.textContent = "Competition is LIVE!"; return; }
+  if(diff <= 0){ el.textContent = "Competition is LIVE!"; return; }
   const d = Math.floor(diff/(1000*60*60*24));
   const h = Math.floor((diff%(1000*60*60*24))/(1000*60*60));
   const m = Math.floor((diff%(1000*60*60))/(1000*60));
@@ -121,363 +118,146 @@ setInterval(updateCountdown,1000);
 updateCountdown();
 shareLinkUpdate();
 
-/* ======== Fetching remote JSON (polling) ======== */
+/* ====== JSONBin fetch/push ====== */
 async function fetchRemote(){
   try{
-    const res = await fetch(GIST_RAW_URL + "?t="+Date.now(), { cache: "no-store" });
-    if(!res.ok) throw new Error("Failed to fetch gist: "+res.status);
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: { "X-Master-Key": API_KEY }
+    });
+    if(!res.ok) throw new Error("Failed to fetch JSONBin data");
     const data = await res.json();
-    remoteData = normalizeData(data);
-    lastFetchAt = Date.now();
-    // render
+    remoteData = normalize(data.record);
+    saveLocal(remoteData);
     renderAll();
-    setStatus(`Last sync: ${new Date(lastFetchAt).toLocaleTimeString()}`);
-  }catch(e){
-    setStatus("Unable to fetch shared data. Check GIST_RAW_URL.", true);
-    console.error(e);
+    setStatus(`Synced: ${new Date().toLocaleTimeString()}`);
+  }catch(err){
+    console.error(err);
+    setStatus("Fetch failed from JSONBin", true);
   }
 }
-function normalizeData(d){
-  // Ensure structure
-  if(!d) d={};
-  d.teams = d.teams && d.teams.length===4 ? d.teams : [{name:"",logo:""},{name:"",logo:""},{name:"",logo:""},{name:"",logo:""}];
-  d.fixtures = d.fixtures || {semi:null,final:null,winners:["",""],scores:[[0,0],[0,0]],chat:[[],[]],finalScore:[0,0],finalChat:[]};
-  // make sure chat arrays exist
+async function pushUpdate(payload){
+  if(pushing) return;
+  pushing = true;
+  setStatus("Pushing update...");
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method:"PUT",
+      headers:{
+        "Content-Type":"application/json",
+        "X-Master-Key": API_KEY
+      },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error("Push failed " + res.status);
+    remoteData = normalize(payload);
+    saveLocal(remoteData);
+    renderAll();
+    setStatus("Update pushed: " + new Date().toLocaleTimeString());
+  }catch(err){
+    console.error(err);
+    setStatus("Push failed: "+err.message,true);
+  } finally{ pushing=false; }
+}
+
+/* Local storage fallback */
+function saveLocal(d){ localStorage.setItem("comp_shared", JSON.stringify(d)); }
+function loadLocal(){ try{ return normalize(JSON.parse(localStorage.getItem("comp_shared")||"null")); }catch(e){ return normalize(null);} }
+function normalize(d){
+  if(!d) d = {};
+  d.teams = Array.isArray(d.teams) && d.teams.length===4 ? d.teams : [{name:"",logo:""},{name:"",logo:""},{name:"",logo:""},{name:"",logo:""}];
+  d.fixtures = d.fixtures || { semi:null, final:null, winners:["",""], scores:[[0,0],[0,0]], chat:[[],[]], finalScore:[0,0], finalChat:[] };
   d.fixtures.chat = d.fixtures.chat || [[],[]];
   d.fixtures.finalChat = d.fixtures.finalChat || [];
   return d;
 }
 
-/* ======== Push update to server (secure) ========
-  Recommended: implement a small proxy that receives { payload } and triggers the
-  GitHub Actions workflow dispatch (or patches gist) using your GH PAT stored as a secret on the proxy side.
-  If WORKFLOW_PROXY_URL is set, the client will POST {payload: <JSON>} to it.
-
-  If WORKFLOW_PROXY_URL is empty and GH_TOKEN_INSECURE is set, the page will try to PATCH the gist directly
-  (this reveals a token in the page — not recommended).
-*/
-async function pushUpdate(payload){
-  if(isPushing){ console.warn("Push in progress — queueing skipped"); }
-  isPushing = true;
-  setStatus("Pushing update...");
-  try{
-    if(WORKFLOW_PROXY_URL){
-      // Proxy should accept POST with JSON { payload: <the full JSON to write> }
-      const r = await fetch(WORKFLOW_PROXY_URL, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ payload })
-      });
-      if(!r.ok) throw new Error("Proxy returned "+r.status);
-      setStatus("Update pushed via proxy ("+nowTime()+")");
-    } else if(GH_TOKEN_INSECURE){
-      // INSECURE direct write to gist using GitHub API (NOT RECOMMENDED)
-      // You must set GIST_ID and GH_TOKEN_INSECURE accordingly or patch this block to call actions dispatch
-      // Extract gist id from raw url (fragile)
-      const gistIdMatch = GIST_RAW_URL.match(/gist\.githubusercontent\.com\/[^\/]+\/([0-9a-fA-F]+)\/raw/);
-      if(!gistIdMatch) throw new Error("Cannot parse Gist ID from raw URL. Use proxy instead.");
-      const gistId = gistIdMatch[1];
-      const patchUrl = `https://api.github.com/gists/${gistId}`;
-      const resp = await fetch(patchUrl, {
-        method:"PATCH",
-        headers: {
-          "Content-Type":"application/json",
-          "Authorization":"token "+GH_TOKEN_INSECURE,
-          "Accept":"application/vnd.github+json"
-        },
-        body: JSON.stringify({ files: { "competition.json": { content: JSON.stringify(payload,null,2) } } })
-      });
-      if(!resp.ok) {
-        const txt = await resp.text();
-        throw new Error("Gist patch failed: "+resp.status+" "+txt);
-      }
-      setStatus("Update pushed directly to gist ("+nowTime()+")");
-    } else {
-      throw new Error("No proxy configured and no GH token provided. Provide WORKFLOW_PROXY_URL or GH_TOKEN_INSECURE.");
-    }
-    // after successful push, update local copy/time
-    remoteData = normalizeData(payload);
-    saveLocal(remoteData);
-    renderAll();
-  }catch(err){
-    console.error("Push failed:", err);
-    setStatus("Push failed: " + err.message, true);
-  } finally {
-    isPushing = false;
-  }
-}
-
-/* ======== Local caching helpers ======== */
-function saveLocal(data){ localStorage.setItem("comp_shared", JSON.stringify(data)); }
-function loadLocal(){ try{ const v=JSON.parse(localStorage.getItem("comp_shared")||'null'); return normalizeData(v); }catch(e){return normalizeData(null);} }
-
-/* ======== Render UI ======== */
-function renderAll(){
-  const data = remoteData || loadLocal();
-  saveLocal(data);
-  renderSlots(data.teams);
-  renderFixturesUI(data.fixtures);
-  renderLeaderboards(data);
-  renderGlobalChat(data);
-  shareLinkUpdate();
-}
-
-/* Slots: claimable inputs for empty slots */
-function renderSlots(teams){
-  const row = document.getElementById("slotsRow");
-  row.innerHTML = "";
-  teams.forEach((t,i)=>{
-    const div = document.createElement("div");
-    div.className = "slot";
-    if(!t.name){
-      div.innerHTML = `
-        <div style="font-weight:600">Slot ${i+1}</div>
-        <input id="teamName${i}" placeholder="Team / House name" />
-        <input id="teamLogoFile${i}" type="file" accept="image/*" />
-        <button onclick="claimSlot(${i})">Claim Slot</button>
-      `;
-    } else {
-      const logoHTML = t.logo ? `<img class="logo" src="${t.logo}" alt="logo">` : "";
-      div.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div><strong>Slot ${i+1}</strong><div style="font-weight:600">${escapeHtml(t.name)}</div></div>
-          <div>${logoHTML}</div>
-        </div>
-      `;
-    }
-    row.appendChild(div);
-  });
-  // update generate button state
-  checkGenerateEnabled();
-}
-
-/* Claim slot (representative) */
-function claimSlot(index){
-  const name = document.getElementById(`teamName${index}`).value.trim();
-  if(!name){ alert("Enter team name"); return; }
-  const fileInput = document.getElementById(`teamLogoFile${index}`);
-  // read logo if provided
-  if(fileInput && fileInput.files && fileInput.files[0]){
-    const reader = new FileReader();
-    reader.onload = e => {
-      applyLocalClaim(index, name, e.target.result);
-    };
-    reader.readAsDataURL(fileInput.files[0]);
-  } else {
-    applyLocalClaim(index, name, "");
-  }
-}
-function applyLocalClaim(index, name, logoData){
-  // Update local copy and push to server
-  const data = remoteData ? JSON.parse(JSON.stringify(remoteData)) : loadLocal();
-  data.teams[index] = { name, logo: logoData };
-  // initialize fixtures object if missing
-  data.fixtures = data.fixtures || { semi:null, final:null, winners:["",""], scores:[[0,0],[0,0]], chat:[[],[]], finalScore:[0,0], finalChat:[] };
-  // Save locally and push
-  saveLocal(data);
-  remoteData = normalizeData(data);
-  renderAll();
-  // Push to server (gist) asynchronously
-  pushUpdate(data);
-}
-
-/* Enable generate button only when 4 slots claimed */
-function checkGenerateEnabled(){
-  const data = remoteData || loadLocal();
-  const allFilled = data.teams && data.teams.every(t => t.name && t.name.trim() !== "");
-  document.getElementById("generateBtn").disabled = !allFilled;
-}
-
-/* Generate fixtures (shuffle) */
-function generateFixtures(){
-  const data = remoteData ? JSON.parse(JSON.stringify(remoteData)) : loadLocal();
-  const teams = [...data.teams];
-  // Shuffle
-  for(let i=teams.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [teams[i],teams[j]]=[teams[j],teams[i]]; }
-  data.fixtures = { semi: [{team1:teams[0], team2:teams[1]}, {team1:teams[2], team2:teams[3]}], final:null, winners:["",""], scores:[[0,0],[0,0]], chat:[[],[]], finalScore:[0,0], finalChat:[] };
-  // Save and push
-  remoteData = normalizeData(data);
-  saveLocal(remoteData);
-  renderAll();
-  pushUpdate(data);
-}
-
-/* Fixtures rendering and score/chat inputs */
-function renderFixturesUI(fixtures){
-  const fixturesDiv = document.getElementById("fixtures");
-  const finalDiv = document.getElementById("finals");
-  if(!fixtures || !fixtures.semi){ fixturesDiv.style.display="none"; document.getElementById("fixturesCard")?.classList?.remove; return; }
-  fixturesDiv.style.display="block";
-  let html = "";
-  fixtures.semi.forEach((m, idx) => {
-    const s0 = fixtures.scores?.[idx]?.[0] ?? 0;
-    const s1 = fixtures.scores?.[idx]?.[1] ?? 0;
-    html += `<div style="margin-bottom:12px">
-      <div style="font-weight:700">${escapeHtml(m.team1.name)} <img class="logo" src="${m.team1.logo||''}" onerror="this.style.display='none'"> vs ${escapeHtml(m.team2.name)} <img class="logo" src="${m.team2.logo||''}" onerror="this.style.display='none'"></div>
-      <div style="margin-top:6px">Score: <input type="number" min="0" value="${s0}" onchange="updateScore(${idx},0,this.value)"> - <input type="number" min="0" value="${s1}" onchange="updateScore(${idx},1,this.value)"></div>
-      <div style="margin-top:8px"><strong>Scorers (match ${idx+1})</strong>
-        <table><tr><th>Time</th><th>Scorer</th><th>Goals</th></tr>
-        ${(fixtures.chat && fixtures.chat[idx] ? fixtures.chat[idx] : []).map(c=>`<tr><td>${c.time}</td><td>${escapeHtml(c.scorer)}</td><td>${c.goals}</td></tr>`).join("")}
-        </table>
-        <div style="margin-top:6px">
-          <input id="scorerName_${idx}" placeholder="Scorer name">
-          <input id="scorerGoals_${idx}" type="number" min="1" value="1" style="width:70px">
-          <button onclick="postScorer(${idx})">Add Scorer</button>
-        </div>
-      </div>
-    </div>`;
-  });
-  fixturesDiv.innerHTML = html;
-
-  // final
-  if(fixtures.final){
-    finalDiv.style.display="block";
-    const f = fixtures.final;
-    const fs0 = fixtures.finalScore?.[0] ?? 0;
-    const fs1 = fixtures.finalScore?.[1] ?? 0;
-    finalDiv.innerHTML = `<div style="font-weight:700">${escapeHtml(f.team1.name)} <img class="logo" src="${f.team1.logo||''}" onerror="this.style.display='none'"> vs ${escapeHtml(f.team2.name)} <img class="logo" src="${f.team2.logo||''}" onerror="this.style.display='none'"></div>
-      <div style="margin-top:6px">Score: <input type="number" min="0" value="${fs0}" onchange="updateFinalScore(0,this.value)"> - <input type="number" min="0" value="${fs1}" onchange="updateFinalScore(1,this.value)"></div>
-      <div style="margin-top:8px"><strong>Scorers (final)</strong>
-        <table><tr><th>Time</th><th>Scorer</th><th>Goals</th></tr>
-        ${(fixtures.finalChat||[]).map(c=>`<tr><td>${c.time}</td><td>${escapeHtml(c.scorer)}</td><td>${c.goals}</td></tr>`).join("")}
-        </table>
-        <div style="margin-top:6px">
-          <input id="scorerName_final" placeholder="Scorer name">
-          <input id="scorerGoals_final" type="number" min="1" value="1" style="width:70px">
-          <button onclick="postScorerFinal()">Add Scorer</button>
-        </div>
-      </div>`;
-  } else {
-    finalDiv.style.display="none";
-    finalDiv.innerHTML = "";
-  }
-}
-
-/* Update score for semi-final matches */
-function updateScore(matchIdx, teamIdx, val){
-  const data = remoteData ? JSON.parse(JSON.stringify(remoteData)) : loadLocal();
-  data.fixtures.scores = data.fixtures.scores || [[0,0],[0,0]];
-  data.fixtures.scores[matchIdx][teamIdx] = parseInt(val)||0;
-  // auto winners + final creation
-  const s0 = data.fixtures.scores[0][0], s1 = data.fixtures.scores[0][1];
-  const s2 = data.fixtures.scores[1][0], s3 = data.fixtures.scores[1][1];
-  data.fixtures.winners[0] = s0>s1 ? data.fixtures.semi[0].team1.name : s1>s0 ? data.fixtures.semi[0].team2.name : "";
-  data.fixtures.winners[1] = s2>s3 ? data.fixtures.semi[1].team1.name : s3>s2 ? data.fixtures.semi[1].team2.name : "";
-  if(data.fixtures.winners[0] && data.fixtures.winners[1]){
-    const t1 = (data.fixtures.semi[0].team1.name === data.fixtures.winners[0]) ? data.fixtures.semi[0].team1 : data.fixtures.semi[0].team2;
-    const t2 = (data.fixtures.semi[1].team1.name === data.fixtures.winners[1]) ? data.fixtures.semi[1].team1 : data.fixtures.semi[1].team2;
-    data.fixtures.final = { team1: t1, team2: t2 };
-    data.fixtures.finalScore = data.fixtures.finalScore || [0,0];
-  } else {
-    data.fixtures.final = null;
-    data.fixtures.finalScore = [0,0];
-    data.fixtures.finalChat = [];
-  }
-  remoteData = normalizeData(data);
-  saveLocal(remoteData);
-  renderAll();
-  pushUpdate(data);
-}
-
-/* Final score update */
-function updateFinalScore(teamIdx, val){
-  const data = remoteData ? JSON.parse(JSON.stringify(remoteData)) : loadLocal();
-  data.fixtures.finalScore = data.fixtures.finalScore || [0,0];
-  data.fixtures.finalScore[teamIdx] = parseInt(val)||0;
-  remoteData = normalizeData(data); saveLocal(remoteData); renderAll(); pushUpdate(data);
-}
-
-/* Post a scorer entry for a semi match */
-function postScorer(idx){
-  const name = document.getElementById(`scorerName_${idx}`).value.trim();
-  const goals = parseInt(document.getElementById(`scorerGoals_${idx}`).value) || 1;
-  if(!name) return alert("Enter scorer name");
-  const data = remoteData ? JSON.parse(JSON.stringify(remoteData)) : loadLocal();
-  data.fixtures.chat = data.fixtures.chat || [[],[]];
-  data.fixtures.chat[idx].push({ time: new Date().toLocaleTimeString(), scorer: name, goals });
-  remoteData = normalizeData(data); saveLocal(remoteData); renderAll(); pushUpdate(data);
-  document.getElementById(`scorerName_${idx}`).value = "";
-}
-
-/* Post scorer for final */
-function postScorerFinal(){
-  const name = document.getElementById("scorerName_final").value.trim();
-  const goals = parseInt(document.getElementById("scorerGoals_final").value) || 1;
-  if(!name) return alert("Enter scorer name");
-  const data = remoteData ? JSON.parse(JSON.stringify(remoteData)) : loadLocal();
-  data.fixtures.finalChat = data.fixtures.finalChat || [];
-  data.fixtures.finalChat.push({ time: new Date().toLocaleTimeString(), scorer: name, goals });
-  remoteData = normalizeData(data); saveLocal(remoteData); renderAll(); pushUpdate(data);
-  document.getElementById("scorerName_final").value = "";
-}
-
-/* Leaderboards generation */
-function generateLeaderboardFromChat(chat, teamLabel){
-  const scores = {};
-  (chat||[]).forEach(c => {
-    if(!scores[c.scorer]) scores[c.scorer] = {team: teamLabel, goals:0};
-    scores[c.scorer].goals += (c.goals||0);
-  });
-  const ranking = Object.keys(scores).map(n=>({scorer:n, ...scores[n]})).sort((a,b)=>b.goals - a.goals);
-  if(ranking.length === 0) return "<div class='muted'>No scorers yet</div>";
-  return `<table><tr><th>Rank</th><th>Scorer</th><th>Team(s)</th><th>Goals</th></tr>${ranking.map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(r.scorer)}</td><td>${escapeHtml(r.team)}</td><td>${r.goals}</td></tr>`).join("")}</table>`;
-}
-
-function renderLeaderboards(data){
-  // per match
-  const container = document.getElementById("matchLeaderboards");
-  if(!data.fixtures || !data.fixtures.semi){ container.innerHTML = "<div class='muted'>Fixtures not generated</div>"; return; }
-  const pieces = data.fixtures.semi.map((m, idx) => {
-    const chat = data.fixtures.chat && data.fixtures.chat[idx] ? data.fixtures.chat[idx] : [];
-    const label = `${m.team1.name} / ${m.team2.name}`;
-    return `<div class="card" style="padding:10px;margin-bottom:10px"><strong>Match ${idx+1}: ${escapeHtml(label)}</strong>${generateLeaderboardFromChat(chat,label)}</div>`;
-  });
-  container.innerHTML = pieces.join("");
-  // global
-  const all = [];
-  data.fixtures.semi?.forEach((m,idx) => { (data.fixtures.chat[idx]||[]).forEach(c=>all.push(c)); });
-  (data.fixtures.finalChat||[]).forEach(c=>all.push(c));
-  document.getElementById("globalLeaderboardTable").innerHTML = generateLeaderboardFromChat(all, "Various");
-}
-
-/* Global competition chat table */
-function renderGlobalChat(data){
-  const rows = [];
-  data.fixtures.semi?.forEach((m,idx) => {
-    (data.fixtures.chat[idx]||[]).forEach(c => rows.push({time:c.time, teams: m.team1.name+" / "+m.team2.name, scorer:c.scorer, goals:c.goals}));
-  });
-  (data.fixtures.finalChat||[]).forEach(c => rows.push({time:c.time, teams: data.fixtures.final? data.fixtures.final.team1.name + " / " + data.fixtures.final.team2.name : "Final", scorer:c.scorer, goals:c.goals}));
-  if(rows.length===0){ document.getElementById("globalChat").innerHTML = "<div class='muted'>No scorer messages yet</div>"; return; }
-  document.getElementById("globalChat").innerHTML = `<table><tr><th>Time</th><th>Teams</th><th>Scorer</th><th>Goals</th></tr>${rows.map(r=>`<tr><td>${r.time}</td><td>${escapeHtml(r.teams)}</td><td>${escapeHtml(r.scorer)}</td><td>${r.goals}</td></tr>`).join("")}</table>`;
-}
-
-/* Escape helper */
-function escapeHtml(s){ if(!s && s!=="") return ""; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-/* ===== Admin reset (local + push) ===== */
-function resetEverything(){
-  const pass = document.getElementById("adminPass").value;
-  if(pass !== ADMIN_PASSWORD){ alert("Wrong admin password"); return; }
-  if(!confirm("Reset all competition data? This will clear teams, fixtures, scores, chats.")) return;
-  const payload = {
-    teams: [{name:"",logo:""},{name:"",logo:""},{name:"",logo:""},{name:"",logo:""}],
-    fixtures: { semi:null, final:null, winners:["",""], scores:[[0,0],[0,0]], chat:[[],[]], finalScore:[0,0], finalChat:[] }
-  };
-  // save locally + push
-  remoteData = normalizeData(payload);
-  saveLocal(remoteData);
-  renderAll();
-  pushUpdate(payload);
-}
-
-/* ===== Polling ===== */
+/* Start polling */
 fetchRemote();
 setInterval(fetchRemote, POLL_MS);
-
-/* If there's a cached local payload use it as fallback while first fetch completes */
 const cached = loadLocal();
 if(cached){ remoteData = cached; renderAll(); }
 
+/* ====== Rest of your UI logic, claimSlot, generateFixtures, saveMatch/saveFinal, render functions ====== */
+/* You can keep all your previous code from your HTML here, just replace pushUpdate & fetchRemote logic as above */
 </script>
 </body>
-      </html>
+</html>￼EnterYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>EBHS Interhouse Football — Editable Scores & Auto Scorer Tables</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(135deg,#0ea5e9,#60a5fa);color:#042;padding:18px;margin:0;}
+  h1{color:#fff;margin:0 0 12px 0;text-align:center}
+  .card{background:#fff;border-radius:10px;padding:12px;max-width:980px;margin:12px auto;box-shadow:0 8px 24px rgba(2,6,23,0.12)}
+  .flex{display:flex;gap:10px;flex-wrap:wrap}
+  input,button,textarea,select{font-size:14px;padding:8px;border-radius:8px;border:1px solid #cbd5e1}
+  button{background:#0369a1;color:white;border:none;cursor:pointer}
+  button.secondary{background:#475569}
+  button:disabled{opacity:0.55;cursor:not-allowed}
+  .slot{width:220px;padding:10px}
+  .logo{width:48px;height:48px;border-radius:8px;object-fit:cover;margin-left:8px}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border:1px solid #e6eef8;padding:6px;text-align:center}
+  th{background:#0369a1;color:#fff}
+  .muted{color:#475569;font-size:13px}
+  .small{font-size:13px}
+  #status{font-size:13px;margin-top:8px;color:#065f46}
+  #error{color:#b91c1c}
+  label{display:block;margin-top:8px;font-weight:600}
+  .right{float:right}
+</style>
+</head>
+<body>
+<h1>EBHS Interhouse Football — Editable Scores (Model A)</h1>
+
+<div class="card">
+  <div class="flex" style="justify-content:space-between;align-items:center">
+    <div class="small muted">Shareable link: <code id="shareLink"></code></div>
+    <div id="countdown" class="small muted"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Team Slots — Representatives Claim Here</h3>
+  <div id="slotsRow" class="flex"></div>
+  <div style="margin-top:10px"><button id="generateBtn" onclick="generateFixtures()" disabled>Generate Semi-Final Fixtures</button></div>
+</div>
+
+<div class="card" id="fixturesCard" style="display:none">
+  <h3>Semi-Finals</h3>
+  <div id="fixtures"></div>
+</div>
+
+<div class="card" id="finalCard" style="display:none">
+  <h3>Final</h3>
+  <div id="finals"></div>
+</div>
+
+<div class="card">
+  <h3>Per-match Leaderboards</h3>
+  <div id="matchLeaderboards"></div>
+</div>
+
+<div class="card">
+  <h3>Competition Scorers Ranking</h3>
+  <div id="globalLeaderboardTable"></div>
+</div>
+
+<div class="card">
+  <h3>Competition Scorers Chat (auto from scorers)</h3>
+  <div id="globalChat"></div>
+</div>
+
+<div class="card small">
+  <label>Admin actions (password required)</label>
+  <input id="adminPass" type="password" placeholder="Admin password (REMI2025)" />
+  <div style="margin-top:8px;display:flex;gap:8px">
+    <button onclick="resetEverything()" class="secondary">Reset All Data</button>
+    <button onclick="forceFetch()">Sync Now</button>
+  </div>
+  <div id="status"></div>
+  <div id="error"></div>
+</div>
+
