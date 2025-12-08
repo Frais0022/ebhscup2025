@@ -1,0 +1,7 @@
+{
+  "matches": {
+    "sf1": { "teamA": "Jemiriye", "teamB": "Fatunla", "scoreA": 0, "scoreB": 0 },
+    "sf2": { "teamA": "Onigede",  "teamB": "McGee",   "scoreA": 0, "scoreB": 0 },
+    "final": { "teamA": "", "teamB": "", "scoreA": 0, "scoreB": 0 }
+  }
+}
