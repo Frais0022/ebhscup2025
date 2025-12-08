@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>REMI OYEBADE Interhouse Football Competition 2025— Live</title>
+<title>EBHS Interhouse Football — Live</title>
 <style>
 body { font-family: Arial, sans-serif; background: #f0f4f8; padding: 20px; }
 h1 { text-align: center; }
@@ -20,9 +20,14 @@ th,td { border:1px solid #ddd; padding:6px; text-align:center; }
 th { background:#0369a1; color:white; }
 #countdown { text-align:center; font-weight:bold; margin-bottom:12px; }
 #shareLink { text-align:center; display:block; font-size:14px; color:#0369a1; word-break:break-all; }
+@media(max-width:600px){ .slot { flex-direction:column; align-items:flex-start; } }
 </style>
 </head>
 <body>
+<div class="container">
+<h1>EBHS Interhouse Football — Live Competition</h1>
+<div id="countdown">Loading countdown...</div>
+<div>Shareable link: <span id="shareLink"></span></div>
 
 <!-- Team Slots -->
 <div class="card">
@@ -245,8 +250,8 @@ function saveMatch(idx){
   remoteData.fixtures.scores[idx]=[scoreA,scoreB];
   remoteData.fixtures.chat[idx]=scorers;
 
-  const winners=[];
   const semi=remoteData.fixtures.semi;
+  const winners=[];
   winners[0]=scoreA>scoreB?semi[0].team1:scoreB>scoreA?semi[0].team2:null;
   winners[1]=remoteData.fixtures.scores[1][0]>remoteData.fixtures.scores[1][1]?semi[1].team1:remoteData.fixtures.scores[1][1]>remoteData.fixtures.scores[1][0]?semi[1].team2:null;
 
@@ -317,6 +322,7 @@ th,td { border:1px solid #ddd; padding:6px; text-align:center; }
 th { background:#0369a1; color:white; }
 #countdown { text-align:center; font-weight:bold; margin-bottom:12px; }
 #shareLink { text-align:center; display:block; font-size:14px; color:#0369a1; word-break:break-all; }
+@media(max-width:600px){ .slot { flex-direction:column; align-items:flex-start; } }
 </style>
 </head>
 <body>
