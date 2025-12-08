@@ -43,6 +43,57 @@ label{display:block;margin-top:8px;font-weight:600}
   <div id="slotsRow" class="flex"></div>
   <div class="muted small" style="margin-top:8px">Tap to claim — first-come-first-serve. Add team name & optional logo.</div>
 </div>
+  <script>
+const TOTAL_SLOTS = 4;
+let slotsData = loadSlots();
+
+/* Render slots UI */
+function renderSlots() {
+  const row = document.getElementById('slotsRow');
+  row.innerHTML = '';
+  slotsData.forEach((slot, index) => {
+    const div = document.createElement('div');
+    div.className = 'slot';
+    if (!slot.name) {
+      div.innerHTML = `
+        <strong>Slot ${index + 1}</strong>
+        <div>
+          <input id="teamName_${index}" placeholder="Enter team/house name" />
+          <input id="teamLogo_${index}" type="file" accept="image/*" />
+        </div>
+        <button onclick="claimSlot(${index})">Claim Slot</button>
+        <div class="muted">First-come-first-serve</div>
+      `;
+    } else {
+      const logoTag = slot.logo ? `<img src="${slot.logo}" alt="logo">` : '';
+      div.innerHTML = `<strong>Slot ${index + 1}</strong> - ${slot.name} ${logoTag}`;
+    }
+    row.appendChild(div);
+  });
+}
+
+/* Claim slot */
+function claimSlot(index) {
+  const nameEl = document.getElementById(`teamName_${index}`);
+  const logoEl = document.getElementById(`teamLogo_${index}`);
+  const name = nameEl.value.trim();
+  if (!name) return alert("Enter team name");
+  if (slotsData[index].name) return alert("Slot already claimed!");
+
+  if (logoEl.files && logoEl.files[0]) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      slotsData[index] = { name, logo: e.target.result };
+      saveSlots();
+      renderSlots();
+    }
+    reader.readAsDataURL(logoEl.files[0]);
+  } else {
+    slotsData[index] = { name, logo: '' };
+    saveSlots();
+    renderSlots();
+  }
+}
 
 <!-- Fixtures -->
 <div class="card" id="fixturesCard" style="display:none">
