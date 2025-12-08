@@ -4,50 +4,118 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>EBHS Cup 2025 — Live Scores</title>
+
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
     .match { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; }
-    .teams { font-size: 1.2rem; margin-bottom: 8px; }
-    .score { font-size: 1.6rem; font-weight: bold; }
+    .teams { font-size: 1.1rem; margin-bottom: 8px; }
+    .score input { width: 40px; font-size: 1.2rem; text-align: center; }
+    .header { display: flex; justify-content: space-between; align-items: center; }
+    .btn { padding: 8px 15px; border-radius: 5px; background: #007bff; color: white; border: none; }
+    #jsonOutput { width: 100%; height: 200px; margin-top: 15px; }
   </style>
 </head>
+
 <body>
-  <h1>EBHS Cup 2025 — Live Scores</h1>
-  <div id="scoreboard">Loading…</div>
+  <div class="header">
+    <h1>EBHS Cup 2025 — Editable Scores</h1>
+    <button class="btn" onclick="generateJSON()">Generate JSON</button>
+  </div>
+
+  <p>After editing scores below, click <b>Generate JSON</b> and copy the output into your <code>data.json</code> file on GitHub.</p>
+
+  <div id="matches">
+    <div class="match">
+      <div class="teams"><b>Semi Final 1:</b> <span id="sf1Name"></span></div>
+      <div class="score">
+        <input id="sf1A" type="number" min="0"> –
+        <input id="sf1B" type="number" min="0">
+      </div>
+    </div>
+
+    <div class="match">
+      <div class="teams"><b>Semi Final 2:</b> <span id="sf2Name"></span></div>
+      <div class="score">
+        <input id="sf2A" type="number" min="0"> –
+        <input id="sf2B" type="number" min="0">
+      </div>
+    </div>
+
+    <div class="match">
+      <div class="teams"><b>Final:</b> <span id="finalName"></span></div>
+      <div class="score">
+        <input id="finalA" type="number" min="0"> –
+        <input id="finalB" type="number" min="0">
+      </div>
+    </div>
+  </div>
+
+  <h2>Generated JSON (paste this into data.json)</h2>
+  <textarea id="jsonOutput"></textarea>
 
   <script>
+    let db = null;
+
     async function loadData(){
       try {
         const res = await fetch('data.json');
-        if (!res.ok) throw new Error("Failed to load data.json: "+res.status);
-        const db = await res.json();
-        render(db);
+        if (!res.ok) throw new Error("Failed to load data.json");
+        db = await res.json();
+        fillInputs();
       } catch(err){
-        document.getElementById('scoreboard').innerHTML = "Error loading data.";
         console.error(err);
       }
     }
 
-    function render(db){
-      const sb = document.getElementById('scoreboard');
-      sb.innerHTML = "";
+    function fillInputs(){
+      document.getElementById("sf1Name").textContent =
+        db.matches.sf1.teamA + " vs " + db.matches.sf1.teamB;
 
-      const m = db.matches;
-      for(const key of ['sf1','sf2','final']){
-        if(!m[key]) continue;
-        const match = m[key];
-        const div = document.createElement('div');
-        div.className = 'match';
-        div.innerHTML = `
-          <div class="teams">${match.teamA} vs ${match.teamB}</div>
-          <div class="score">${match.scoreA} – ${match.scoreB}</div>
-        `;
-        sb.appendChild(div);
-      }
+      document.getElementById("sf2Name").textContent =
+        db.matches.sf2.teamA + " vs " + db.matches.sf2.teamB;
+
+      document.getElementById("finalName").textContent =
+        db.matches.final.teamA + " vs " + db.matches.final.teamB;
+
+      document.getElementById("sf1A").value = db.matches.sf1.scoreA;
+      document.getElementById("sf1B").value = db.matches.sf1.scoreB;
+
+      document.getElementById("sf2A").value = db.matches.sf2.scoreA;
+      document.getElementById("sf2B").value = db.matches.sf2.scoreB;
+
+      document.getElementById("finalA").value = db.matches.final.scoreA;
+      document.getElementById("finalB").value = db.matches.final.scoreB;
+    }
+
+    function generateJSON(){
+      const output = {
+        matches: {
+          sf1: {
+            teamA: db.matches.sf1.teamA,
+            teamB: db.matches.sf1.teamB,
+            scoreA: parseInt(document.getElementById("sf1A").value),
+            scoreB: parseInt(document.getElementById("sf1B").value)
+          },
+          sf2: {
+            teamA: db.matches.sf2.teamA,
+            teamB: db.matches.sf2.teamB,
+            scoreA: parseInt(document.getElementById("sf2A").value),
+            scoreB: parseInt(document.getElementById("sf2B").value)
+          },
+          final: {
+            teamA: db.matches.final.teamA,
+            teamB: db.matches.final.teamB,
+            scoreA: parseInt(document.getElementById("finalA").value),
+            scoreB: parseInt(document.getElementById("finalB").value)
+          }
+        }
+      };
+
+      document.getElementById("jsonOutput").value = JSON.stringify(output, null, 2);
     }
 
     loadData();
-    setInterval(loadData, 5000);
   </script>
+
 </body>
 </html>
