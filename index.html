@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>EBHS Interhouse Football — Live</title>
 <style>
   :root{--accent:#0369a1;--muted:#6b7280}
@@ -21,7 +21,6 @@
   th,td{border:1px solid #e6eef8;padding:6px;text-align:center}
   th{background:var(--accent);color:#fff}
   .muted{color:var(--muted);font-size:13px}
-  .small{font-size:13px}
   label{display:block;margin-top:8px;font-weight:600}
   #countdown{color:#fff;text-align:center;margin-bottom:8px}
   #shareLink{color:#fff;word-break:break-all;text-align:center}
@@ -66,7 +65,7 @@
     <!-- Admin -->
     <div class="card">
       <label>Admin actions (password required)</label>
-      <input id="adminPass" type="password" placeholder="Admin password (REMI2025)" />
+      <input id="adminPass" type="password" placeholder="Admin password (admin123)" />
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
         <button onclick="resetEverything()" class="secondary">Reset All Data</button>
         <button onclick="forceFetch()">Sync Now</button>
@@ -77,18 +76,18 @@
   </div>
 
 <script>
-/* ====== CONFIG - inserted from your input ====== */
+/* ---------------- CONFIG ---------------- */
 const BIN_ID = "6935e85143b1c97be9de3eb2";
 const API_KEY = "$2a$10$ez2mNhQs2BylwsUGJgfaceuUHDJnBUnWu6mwdgavcko3ZQTMXyKlG";
-const ADMIN_PASSWORD = "REMI2025";
+const ADMIN_PASSWORD = "admin123";              // change if you like
 const POLL_MS = 2500;
 const COMP_DATE = new Date("December 8, 2025 08:30:00").getTime();
-/* ============================================== */
+/* ---------------------------------------- */
 
 let remoteData = null;
 let pushing = false;
 
-/* UI helpers */
+/* small helpers */
 function setStatus(msg, isError=false){
   document.getElementById("status").textContent = isError ? "" : msg;
   document.getElementById("error").textContent = isError ? msg : "";
@@ -111,53 +110,10 @@ setInterval(updateCountdown,1000);
 updateCountdown();
 shareLinkUpdate();
 
-/* JSONBin fetch & push */
-async function fetchRemote(){
-  try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { "X-Master-Key": API_KEY }
-    });
-    if(!res.ok) throw new Error("Fetch failed: " + res.status);
-    const payload = await res.json();
-    remoteData = normalize(payload.record);
-    renderAll();
-    setStatus(`Synced: ${new Date().toLocaleTimeString()}`);
-  }catch(err){
-    console.error(err);
-    setStatus("Fetch failed from JSONBin", true);
-  }
-}
-
-async function pushUpdate(payload){
-  // Prevent concurrent pushes
-  if(pushing) return;
-  pushing = true;
-  setStatus("Pushing update...");
-  try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Master-Key": API_KEY
-      },
-      body: JSON.stringify(payload)
-    });
-    if(!res.ok) throw new Error("Push failed: " + res.status);
-    remoteData = normalize(payload);
-    renderAll();
-    setStatus("Update pushed: " + new Date().toLocaleTimeString());
-  }catch(err){
-    console.error(err);
-    setStatus("Push failed: " + err.message, true);
-  } finally { pushing = false; }
-}
-
-/* Local fallback (keeps things showing if fetch fails) */
-function saveLocal(d){ localStorage.setItem("comp_shared", JSON.stringify(d)); }
-function loadLocal(){ try{ return normalize(JSON.parse(localStorage.getItem("comp_shared")||"null")); }catch(e){ return normalize(null);} }
-
+/* ---------- Data helpers (with freshness) ---------- */
 function normalize(d){
   if(!d) d = {};
+  d._updatedAt = typeof d._updatedAt === 'number' ? d._updatedAt : 0;
   d.teams = Array.isArray(d.teams) && d.teams.length===4 ? d.teams : [
     { name:"", logo:"", claimedAt:0 },
     { name:"", logo:"", claimedAt:0 },
@@ -169,12 +125,67 @@ function normalize(d){
   d.fixtures.finalChat = d.fixtures.finalChat || [];
   return d;
 }
+function saveLocal(d){ try { localStorage.setItem("comp_shared", JSON.stringify(d)); } catch(e){ console.warn("local save failed", e); } }
+function loadLocal(){ try{ const raw = localStorage.getItem("comp_shared"); return raw ? normalize(JSON.parse(raw)) : normalize(null); }catch(e){ console.warn("local load fail", e); return normalize(null);} }
 
-/* init */
+/* ---------- Smart fetch & push (avoid stale overwrites) ---------- */
+let suppressUntil = 0;    // timestamp until which we ignore stale incoming fetches
+
+async function fetchRemote(){
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, { headers: { "X-Master-Key": API_KEY } });
+    if(!res.ok) throw new Error("Fetch failed: " + res.status);
+    const payload = await res.json();
+    const incoming = normalize(payload.record || {});
+    const incomingAt = incoming._updatedAt || 0;
+    const localAt = remoteData && remoteData._updatedAt ? remoteData._updatedAt : 0;
+    const now = Date.now();
+    // If we are suppressing, accept only strictly newer incoming
+    if(suppressUntil > now){
+      if(incomingAt <= localAt) return; // stale -> ignore
+    } else {
+      if(incomingAt <= localAt) return; // stale or same -> ignore
+    }
+    // accept incoming
+    remoteData = incoming;
+    saveLocal(remoteData);
+    renderAll();
+    setStatus(`Synced: ${new Date().toLocaleTimeString()}`);
+  }catch(err){
+    console.error("fetchRemote error", err);
+    setStatus("Fetch failed from JSONBin", true);
+  }
+}
+
+async function pushUpdate(payload){
+  if(pushing) return;
+  pushing = true;
+  setStatus("Pushing update...");
+  try{
+    const ts = Date.now();
+    payload._updatedAt = ts;
+    // set local immediately to prevent races
+    remoteData = normalize(payload);
+    saveLocal(remoteData);
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error("Push failed: " + res.status);
+    // suppress incoming stale fetches briefly
+    suppressUntil = Date.now() + 3000; // 3s suppression window
+    setStatus("Update pushed: " + new Date(ts).toLocaleTimeString());
+    renderAll();
+  }catch(err){
+    console.error("pushUpdate error", err);
+    setStatus("Push failed: " + err.message, true);
+  } finally { pushing = false; }
+}
+
+/* start polling */
 fetchRemote();
 setInterval(fetchRemote, POLL_MS);
-const cached = loadLocal();
-if(cached){ remoteData = cached; renderAll(); }
 
 /* ========== UI & Logic ========== */
 
@@ -187,7 +198,7 @@ function renderAll(){
   checkAutoGenerate();
 }
 
-/* --- Slots UI --- */
+/* ---- SLOTS UI and stable claim flow ---- */
 function renderSlots(teams){
   const row = document.getElementById("slotsRow");
   row.innerHTML = "";
@@ -214,7 +225,7 @@ function renderSlots(teams){
   });
 }
 
-/* Attempt claim: fetch latest, verify, then claim to avoid race */
+/* Attempt claim: fetch latest, verify, then push to avoid race */
 async function attemptClaimSlot(index){
   const nameEl = document.getElementById(`claimName_${index}`);
   if(!nameEl) return alert("Name input missing");
@@ -223,48 +234,45 @@ async function attemptClaimSlot(index){
   const fileEl = document.getElementById(`claimLogo_${index}`);
 
   setStatus("Checking latest data...");
-  // fetch latest before claiming
   try{
+    // fetch latest snapshot
     const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, { headers: { "X-Master-Key": API_KEY } });
     if(!res.ok) throw new Error("Failed to fetch latest: " + res.status);
     const payload = await res.json();
-    const latest = normalize(payload.record);
-    // Check slot still free
+    const latest = normalize(payload.record || {});
+    // If now claimed, refresh UI & cancel
     if(latest.teams[index] && latest.teams[index].name){
-      // someone else claimed it
       remoteData = latest;
+      saveLocal(remoteData);
       renderAll();
       return alert("Sorry — this slot was just claimed by someone else. Please pick another slot.");
     }
-    // slot is free — proceed to apply claim (read file if any)
-    if(fileEl && fileEl.files && fileEl.files[0]){
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        latest.teams[index] = { name, logo: e.target.result, claimedAt: Date.now() };
-        // push latest
-        await pushUpdate(latest);
-        alert("Slot claimed successfully!");
-      };
-      reader.readAsDataURL(fileEl.files[0]);
-    } else {
-      latest.teams[index] = { name, logo: "", claimedAt: Date.now() };
+    // proceed to set and push
+    const applyAndPush = async (logoData) => {
+      latest.teams[index] = { name, logo: logoData || "", claimedAt: Date.now() };
+      // stamp and send
       await pushUpdate(latest);
       alert("Slot claimed successfully!");
+    };
+    if(fileEl && fileEl.files && fileEl.files[0]){
+      const reader = new FileReader();
+      reader.onload = async (e) => { await applyAndPush(e.target.result); };
+      reader.readAsDataURL(fileEl.files[0]);
+    } else {
+      await applyAndPush("");
     }
   }catch(err){
-    console.error(err);
+    console.error("attemptClaimSlot error", err);
     setStatus("Claim failed: " + err.message, true);
     alert("Claim failed. Please try again.");
   }
 }
 
-/* ---- Fixtures generation & editing ---- */
+/* ---- AUTO-GENERATE semi-finals when all slots claimed ---- */
 function checkAutoGenerate(){
   if(!remoteData) remoteData = loadLocal();
-  // if all teams claimed and no semi created => generate
   const allClaimed = remoteData.teams && remoteData.teams.every(t => t.name && t.name.trim() !== "");
   if(allClaimed && !remoteData.fixtures.semi){
-    // shuffle
     const teams = [...remoteData.teams];
     for(let i = teams.length-1; i>0; i--){ const j = Math.floor(Math.random()*(i+1)); [teams[i],teams[j]]=[teams[j],teams[i]]; }
     remoteData.fixtures = {
@@ -279,12 +287,13 @@ function checkAutoGenerate(){
       finalScore:[0,0],
       finalChat:[]
     };
+    remoteData._updatedAt = Date.now();
     saveLocal(remoteData);
     pushUpdate(remoteData);
   }
 }
 
-/* Render fixtures UI (editable by admin) */
+/* ---- Fixtures UI (admin edits) ---- */
 function renderFixturesUI(fixtures){
   const fixturesDiv = document.getElementById("fixtures");
   const finalsDiv = document.getElementById("finals");
@@ -332,7 +341,7 @@ function renderFixturesUI(fixtures){
   }
 }
 
-/* --- Parse scorers string to [{scorer,goals}] --- */
+/* ---- Scorers parsing & save ---- */
 function parseScorersList(text){
   if(!text) return [];
   const parts = text.replace(/\n/g,',').split(/[,;]+/).map(s=>s.trim()).filter(Boolean);
@@ -345,7 +354,7 @@ function parseScorersList(text){
   return out;
 }
 
-/* --- Save match (admin only) --- */
+/* ---- Admin save semi match ---- */
 async function saveMatch(idx){
   const pass = document.getElementById(`adminPassMatch_${idx}`).value;
   if(pass !== ADMIN_PASSWORD){ alert("Wrong admin password"); return; }
@@ -377,28 +386,30 @@ async function saveMatch(idx){
     remoteData.fixtures.finalChat = [];
   }
 
+  // set fresh timestamp and push
+  remoteData._updatedAt = Date.now();
   saveLocal(remoteData);
   renderAll();
   await pushUpdate(remoteData);
 }
 
-/* --- Save final (admin only) --- */
+/* ---- Admin save final ---- */
 async function saveFinal(){
-  const pass = document.getElementById("adminPassFinal").value || document.getElementById("adminPassFinal")?.value;
-  const passFromInput = document.getElementById("adminPassFinal") ? document.getElementById("adminPassFinal").value : document.getElementById("adminPassFinal");
-  const passField = document.getElementById("adminPassFinal");
-  const passUsed = passField ? passField.value : document.getElementById("adminPass").value;
-  if(passUsed !== ADMIN_PASSWORD){ alert("Wrong admin password"); return; }
+  const pass = document.getElementById("adminPassFinal") ? document.getElementById("adminPassFinal").value : document.getElementById("adminPass").value;
+  if(pass !== ADMIN_PASSWORD){ alert("Wrong admin password"); return; }
   if(!remoteData) remoteData = loadLocal();
   const sA = parseInt(document.getElementById("finalScoreA").value)||0;
   const sB = parseInt(document.getElementById("finalScoreB").value)||0;
   const parsed = parseScorersList(document.getElementById("finalScorersList").value || "");
   remoteData.fixtures.finalScore = [sA, sB];
   remoteData.fixtures.finalChat = parsed.map(p=>({ time: new Date().toLocaleTimeString(), scorer: p.scorer, goals: p.goals }));
-  saveLocal(remoteData); renderAll(); await pushUpdate(remoteData);
+  remoteData._updatedAt = Date.now();
+  saveLocal(remoteData);
+  renderAll();
+  await pushUpdate(remoteData);
 }
 
-/* --- Leaderboards generation --- */
+/* ---- Leaderboards & Live Feed ---- */
 function generateLeaderboardFromChat(chat, label){
   const scores = {};
   (chat||[]).forEach(c=>{ if(!scores[c.scorer]) scores[c.scorer] = { team: label, goals: 0 }; scores[c.scorer].goals += (c.goals||0); });
@@ -408,15 +419,7 @@ function generateLeaderboardFromChat(chat, label){
 }
 
 function renderLeaderboards(data){
-  // per match
-  if(!data.fixtures || !data.fixtures.semi){
-    document.getElementById("matchLeaderboards")?.innerHTML = "<div class='muted'>Fixtures not generated</div>";
-  } else {
-    // nothing to do here (we render per-fixture inside renderFixturesUI)
-  }
-
-  // global aggregation
-  if(!data.fixtures || !data.fixtures.semi){
+  if(!data || !data.fixtures || !data.fixtures.semi){
     document.getElementById("globalLeaderboardTable").innerHTML = "<div class='muted'>Fixtures not generated</div>";
     document.getElementById("globalChat").innerHTML = "<div class='muted'>No scorer events yet</div>";
     return;
@@ -441,7 +444,7 @@ function renderLeaderboards(data){
   else document.getElementById("globalLeaderboardTable").innerHTML = `<table><tr><th>Rank</th><th>Scorer</th><th>Team(s)</th><th>Goals</th></tr>${ranking.map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.team)}</td><td>${r.goals}</td></tr>`).join("")}</table>`;
 }
 
-/* --- Admin reset & force fetch --- */
+/* ---- Admin reset & fetch ---- */
 function resetEverything(){
   const pass = document.getElementById("adminPass").value;
   if(pass !== ADMIN_PASSWORD){ alert("Wrong admin password"); return; }
@@ -453,25 +456,19 @@ function resetEverything(){
       { name: "", logo: "", claimedAt: 0 },
       { name: "", logo: "", claimedAt: 0 }
     ],
-    fixtures: { semi:null, final:null, winners:["",""], scores:[[0,0],[0,0]], chat:[[],[]], finalScore:[0,0], finalChat:[] }
+    fixtures: { semi:null, final:null, winners:["",""], scores:[[0,0],[0,0]], chat:[[],[]], finalScore:[0,0], finalChat:[] },
+    _updatedAt: Date.now()
   };
   remoteData = normalize(payload);
   saveLocal(remoteData);
   renderAll();
   pushUpdate(remoteData);
 }
-
 function forceFetch(){ fetchRemote(); }
 
-/* --- Exports used above --- */
-function renderFixturesUI(fixtures){ renderFixturesUI = renderFixturesUI_func; return renderFixturesUI_func(fixtures); } // placeholder to appease linter
-function renderFixturesUI_func(fixtures){ /* implementation above already handles UI - this wrapper prevents duplicate declaration warnings */ return; }
-
-/* Because functions were referenced earlier, ensure leaderboards render on startup */
-function renderLeaderboardsWrapper(){ if(remoteData) renderLeaderboards(remoteData); }
-
-/* kick first paint of leaderboards if remoteData already set */
-if(remoteData) renderAll();
+/* ---- initial render if local exists ---- */
+const cached = loadLocal();
+if(cached){ remoteData = cached; renderAll(); }
 </script>
 </body>
   </html>
