@@ -1,303 +1,477 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>EBHS Interhouse Football — Live</title>
 <style>
-body { font-family: Arial, sans-serif; background: #f0f4f8; padding: 20px; }
-h1 { text-align: center; }
-.container { max-width: 900px; margin: auto; }
-.card { background: #fff; border-radius: 10px; padding: 12px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-.slot { border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-bottom: 10px; display:flex; align-items:center; justify-content: space-between; }
-.slot img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; margin-left: 8px; }
-input, button, textarea { padding:6px; border-radius:6px; border:1px solid #ccc; margin-top:4px; }
-button { background:#0369a1; color:#fff; border:none; cursor:pointer; }
-button:disabled { opacity:0.6; cursor:not-allowed; }
-.muted { color:#555; font-size:13px; }
-table { width:100%; border-collapse: collapse; margin-top:8px; }
-th,td { border:1px solid #ddd; padding:6px; text-align:center; }
-th { background:#0369a1; color:white; }
-#countdown { text-align:center; font-weight:bold; margin-bottom:12px; }
-#shareLink { text-align:center; display:block; font-size:14px; color:#0369a1; word-break:break-all; }
-@media(max-width:600px){ .slot { flex-direction:column; align-items:flex-start; } }
+  :root{--accent:#0369a1;--muted:#6b7280}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:linear-gradient(135deg,#0ea5e9,#60a5fa);color:#042;padding:18px;}
+  .wrap{max-width:980px;margin:12px auto}
+  h1{color:#fff;text-align:center;margin:6px 0 12px}
+  .card{background:#fff;border-radius:12px;padding:12px;margin:12px 0;box-shadow:0 10px 30px rgba(2,6,23,0.12)}
+  .flex{display:flex;gap:10px;flex-wrap:wrap}
+  input,button,textarea,select{font-size:14px;padding:8px;border-radius:8px;border:1px solid #cbd5e1}
+  button{background:var(--accent);color:white;border:none;cursor:pointer}
+  button.secondary{background:#475569}
+  button:disabled{opacity:.6;cursor:not-allowed}
+  .slot{width:220px;padding:10px;border-radius:8px;border:1px solid #e6eef8;background:#f8fafc}
+  .logo{width:48px;height:48px;border-radius:8px;object-fit:cover;margin-left:8px}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border:1px solid #e6eef8;padding:6px;text-align:center}
+  th{background:var(--accent);color:#fff}
+  .muted{color:var(--muted);font-size:13px}
+  .small{font-size:13px}
+  label{display:block;margin-top:8px;font-weight:600}
+  #countdown{color:#fff;text-align:center;margin-bottom:8px}
+  #shareLink{color:#fff;word-break:break-all;text-align:center}
+  @media(max-width:600px){ .slot{width:100%} .flex{flex-direction:column} .card{padding:10px} }
 </style>
 </head>
 <body>
-<div class="container">
-<h1>REMI OYEBADE Interhouse Football Competition 2025— Live Competition</h1>
-<div id="countdown">Loading countdown...</div>
-<div>Shareable link: <span id="shareLink"></span></div>
+  <div class="wrap">
+    <h1>EBHS Interhouse Football — Live</h1>
+    <div id="countdown" class="small">Loading countdown...</div>
+    <div class="muted small" style="text-align:center">Shareable link: <span id="shareLink"></span></div>
 
-<!-- Team Slots -->
-<div class="card">
-<h3>Team Slots — Representatives Claim Here</h3>
-<div id="slotsRow"></div>
-<div class="muted">First-come-first-serve. Enter team name and optional logo, then click Claim.</div>
-</div>
+    <!-- Slots -->
+    <div class="card">
+      <h3>Team Slots — Representatives Claim Here</h3>
+      <div id="slotsRow" class="flex"></div>
+      <div class="muted small">First-come-first-serve. Add team name & optional logo, then Claim. Slots cannot be overwritten by other reps.</div>
+    </div>
 
-<!-- Semi-Finals -->
-<div class="card" id="semiCard" style="display:none">
-<h3>Semi-Finals</h3>
-<div id="semiFixtures"></div>
-</div>
+    <!-- Fixtures -->
+    <div id="fixturesArea" class="card" style="display:none">
+      <h3>Semi-Finals</h3>
+      <div id="fixtures"></div>
+    </div>
 
-<!-- Final -->
-<div class="card" id="finalCard" style="display:none">
-<h3>Final</h3>
-<div id="finalFixture"></div>
-</div>
+    <div id="finalArea" class="card" style="display:none">
+      <h3>Final</h3>
+      <div id="finals"></div>
+    </div>
 
-<!-- Global Scorers -->
-<div class="card">
-<h3>Competition Scorers Ranking (Live)</h3>
-<div id="globalLeaderboard"></div>
-</div>
-</div>
+    <!-- Leaderboards -->
+    <div class="card">
+      <h3>Competition Scorers Ranking (Auto-generated)</h3>
+      <div id="globalLeaderboardTable"></div>
+    </div>
+
+    <div class="card">
+      <h3>Competition Scorers Feed (Live)</h3>
+      <div id="globalChat"></div>
+    </div>
+
+    <!-- Admin -->
+    <div class="card">
+      <label>Admin actions (password required)</label>
+      <input id="adminPass" type="password" placeholder="Admin password (REMI2025)" />
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="resetEverything()" class="secondary">Reset All Data</button>
+        <button onclick="forceFetch()">Sync Now</button>
+      </div>
+      <div id="status" class="muted small" style="margin-top:8px"></div>
+      <div id="error" class="muted small" style="color:#b91c1c"></div>
+    </div>
+  </div>
 
 <script>
-/* ===== CONFIG ===== */
-const BIN_ID = "YOUR_JSONBIN_BIN_ID";        // replace with your JSONBin bin id
-const API_KEY = "YOUR_JSONBIN_API_KEY";      // replace with your JSONBin secret key
+/* ====== CONFIG - inserted from your input ====== */
+const BIN_ID = "6935e85143b1c97be9de3eb2";
+const API_KEY = "$2a$10$ez2mNhQs2BylwsUGJgfaceuUHDJnBUnWu6mwdgavcko3ZQTMXyKlG";
 const ADMIN_PASSWORD = "REMI2025";
-const TOTAL_SLOTS = 4;
+const POLL_MS = 2500;
 const COMP_DATE = new Date("December 8, 2025 08:30:00").getTime();
+/* ============================================== */
+
 let remoteData = null;
+let pushing = false;
 
-/* --- Shareable Link --- */
-function updateShareLink(){
-  const u = new URL(location.href);
-  document.getElementById('shareLink').textContent = u.toString();
+/* UI helpers */
+function setStatus(msg, isError=false){
+  document.getElementById("status").textContent = isError ? "" : msg;
+  document.getElementById("error").textContent = isError ? msg : "";
 }
-updateShareLink();
+function escapeHtml(s){ if(s===undefined||s===null) return ""; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function shareLinkUpdate(){ const u = new URL(location.href); if(!u.searchParams.get('comp')) u.searchParams.set('comp','EBHS2025'); history.replaceState({},'',u.toString()); document.getElementById('shareLink').textContent = u.toString(); }
 
-/* --- Countdown --- */
+/* countdown */
 function updateCountdown(){
   const el = document.getElementById('countdown');
   const diff = COMP_DATE - Date.now();
-  if(diff <=0){ el.textContent="Competition is LIVE!"; return; }
-  const d=Math.floor(diff/(1000*60*60*24));
-  const h=Math.floor((diff%(1000*60*60*24))/(1000*60*60));
-  const m=Math.floor((diff%(1000*60*60))/(1000*60));
-  const s=Math.floor((diff%(1000*60))/1000);
-  el.textContent=`Starts in ${d}d ${h}h ${m}m ${s}s`;
+  if(diff <= 0){ el.textContent = "Competition is LIVE!"; return; }
+  const d = Math.floor(diff/(1000*60*60*24));
+  const h = Math.floor((diff%(1000*60*60*24))/(1000*60*60));
+  const m = Math.floor((diff%(1000*60*60))/(1000*60));
+  const s = Math.floor((diff%(1000*60))/1000);
+  el.textContent = `Starts: ${d}d ${h}h ${m}m ${s}s`;
 }
 setInterval(updateCountdown,1000);
 updateCountdown();
+shareLinkUpdate();
 
-/* --- Utilities --- */
-async function fetchData(){
-  try {
+/* JSONBin fetch & push */
+async function fetchRemote(){
+  try{
     const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
       headers: { "X-Master-Key": API_KEY }
     });
-    const json = await res.json();
-    remoteData = normalize(json.record);
+    if(!res.ok) throw new Error("Fetch failed: " + res.status);
+    const payload = await res.json();
+    remoteData = normalize(payload.record);
     renderAll();
-  } catch(e){ console.error("Fetch error:", e); }
+    setStatus(`Synced: ${new Date().toLocaleTimeString()}`);
+  }catch(err){
+    console.error(err);
+    setStatus("Fetch failed from JSONBin", true);
+  }
 }
 
-async function pushData(){
+async function pushUpdate(payload){
+  // Prevent concurrent pushes
+  if(pushing) return;
+  pushing = true;
+  setStatus("Pushing update...");
   try{
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method:"PUT",
-      headers: { "Content-Type":"application/json","X-Master-Key": API_KEY },
-      body: JSON.stringify(remoteData)
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Master-Key": API_KEY
+      },
+      body: JSON.stringify(payload)
     });
-  }catch(e){ console.error("Push error:",e); }
+    if(!res.ok) throw new Error("Push failed: " + res.status);
+    remoteData = normalize(payload);
+    renderAll();
+    setStatus("Update pushed: " + new Date().toLocaleTimeString());
+  }catch(err){
+    console.error(err);
+    setStatus("Push failed: " + err.message, true);
+  } finally { pushing = false; }
 }
 
-/* Normalize structure */
+/* Local fallback (keeps things showing if fetch fails) */
+function saveLocal(d){ localStorage.setItem("comp_shared", JSON.stringify(d)); }
+function loadLocal(){ try{ return normalize(JSON.parse(localStorage.getItem("comp_shared")||"null")); }catch(e){ return normalize(null);} }
+
 function normalize(d){
   if(!d) d = {};
-  d.slots = d.slots && d.slots.length===TOTAL_SLOTS ? d.slots : Array.from({length:TOTAL_SLOTS},()=>({name:'',logo:''}));
-  d.fixtures = d.fixtures || { semi:null, final:null, scores:[[0,0],[0,0]], finalScore:[0,0], chat:[[],[]], finalChat:[] };
+  d.teams = Array.isArray(d.teams) && d.teams.length===4 ? d.teams : [
+    { name:"", logo:"", claimedAt:0 },
+    { name:"", logo:"", claimedAt:0 },
+    { name:"", logo:"", claimedAt:0 },
+    { name:"", logo:"", claimedAt:0 }
+  ];
+  d.fixtures = d.fixtures || { semi:null, final:null, winners:["",""], scores:[[0,0],[0,0]], chat:[[],[]], finalScore:[0,0], finalChat:[] };
   d.fixtures.chat = d.fixtures.chat || [[],[]];
   d.fixtures.finalChat = d.fixtures.finalChat || [];
   return d;
 }
 
-/* --- Render --- */
+/* init */
+fetchRemote();
+setInterval(fetchRemote, POLL_MS);
+const cached = loadLocal();
+if(cached){ remoteData = cached; renderAll(); }
+
+/* ========== UI & Logic ========== */
+
 function renderAll(){
-  renderSlots();
-  renderFixtures();
-  renderLeaderboard();
+  const d = remoteData || loadLocal();
+  saveLocal(d);
+  renderSlots(d.teams);
+  renderFixturesUI(d.fixtures);
+  renderLeaderboards(d);
+  checkAutoGenerate();
 }
 
-/* --- Slots --- */
-function renderSlots(){
-  const row = document.getElementById('slotsRow');
-  row.innerHTML='';
-  remoteData.slots.forEach((slot,index)=>{
-    const div=document.createElement('div');
-    div.className='slot';
-    if(!slot.name){
-      div.innerHTML=`<div>
-        <strong>Slot ${index+1}</strong><br>
-        <input id="teamName_${index}" placeholder="Team name"><br>
-        <input id="teamLogo_${index}" type="file" accept="image/*">
-      </div>
-      <button onclick="claimSlot(${index})">Claim Slot</button>`;
-    }else{
-      const logoTag=slot.logo?`<img src="${slot.logo}" alt="logo">`:'';
-      div.innerHTML=`<strong>Slot ${index+1}</strong> - ${slot.name} ${logoTag}`;
+/* --- Slots UI --- */
+function renderSlots(teams){
+  const row = document.getElementById("slotsRow");
+  row.innerHTML = "";
+  teams.forEach((t,i) => {
+    const div = document.createElement("div");
+    div.className = "slot";
+    if(!t.name){
+      div.innerHTML = `<div style="font-weight:600">Slot ${i+1}</div>
+        <input id="claimName_${i}" placeholder="Team / House name" />
+        <input id="claimLogo_${i}" type="file" accept="image/*" />
+        <div style="margin-top:6px">
+          <button onclick="attemptClaimSlot(${i})">Claim Slot</button>
+        </div>
+        <div class="muted small" style="margin-top:6px">Tap to claim — first-come-first-serve</div>`;
+    } else {
+      const logoTag = t.logo ? `<img class="logo" src="${t.logo}" alt="logo">` : "";
+      const ts = t.claimedAt ? new Date(t.claimedAt).toLocaleString() : "";
+      div.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between">
+          <div><strong>Slot ${i+1}</strong><div style="font-weight:600">${escapeHtml(t.name)}</div><div class="muted small">Claimed: ${escapeHtml(ts)}</div></div>
+          <div>${logoTag}</div>
+        </div>`;
     }
     row.appendChild(div);
   });
 }
 
-/* Claim slot */
-function claimSlot(index){
-  const nameEl=document.getElementById(`teamName_${index}`);
-  const logoEl=document.getElementById(`teamLogo_${index}`);
-  const name=nameEl.value.trim();
+/* Attempt claim: fetch latest, verify, then claim to avoid race */
+async function attemptClaimSlot(index){
+  const nameEl = document.getElementById(`claimName_${index}`);
+  if(!nameEl) return alert("Name input missing");
+  const name = nameEl.value.trim();
   if(!name) return alert("Enter team name");
-  if(remoteData.slots[index].name) return alert("Slot already claimed");
+  const fileEl = document.getElementById(`claimLogo_${index}`);
 
-  if(logoEl.files && logoEl.files[0]){
-    const reader=new FileReader();
-    reader.onload=e=>{
-      remoteData.slots[index]={name,logo:e.target.result};
+  setStatus("Checking latest data...");
+  // fetch latest before claiming
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, { headers: { "X-Master-Key": API_KEY } });
+    if(!res.ok) throw new Error("Failed to fetch latest: " + res.status);
+    const payload = await res.json();
+    const latest = normalize(payload.record);
+    // Check slot still free
+    if(latest.teams[index] && latest.teams[index].name){
+      // someone else claimed it
+      remoteData = latest;
       renderAll();
-      pushData();
-      autoGenerateFixtures();
+      return alert("Sorry — this slot was just claimed by someone else. Please pick another slot.");
     }
-    reader.readAsDataURL(logoEl.files[0]);
-  }else{
-    remoteData.slots[index]={name,logo:''};
-    renderAll();
-    pushData();
-    autoGenerateFixtures();
+    // slot is free — proceed to apply claim (read file if any)
+    if(fileEl && fileEl.files && fileEl.files[0]){
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        latest.teams[index] = { name, logo: e.target.result, claimedAt: Date.now() };
+        // push latest
+        await pushUpdate(latest);
+        alert("Slot claimed successfully!");
+      };
+      reader.readAsDataURL(fileEl.files[0]);
+    } else {
+      latest.teams[index] = { name, logo: "", claimedAt: Date.now() };
+      await pushUpdate(latest);
+      alert("Slot claimed successfully!");
+    }
+  }catch(err){
+    console.error(err);
+    setStatus("Claim failed: " + err.message, true);
+    alert("Claim failed. Please try again.");
   }
 }
 
-/* --- Auto-generate Fixtures when all slots claimed --- */
-function autoGenerateFixtures(){
-  if(remoteData.slots.every(s=>s.name) && !remoteData.fixtures.semi){
-    const teams=[...remoteData.slots];
-    for(let i=teams.length-1;i>0;i--){
-      const j=Math.floor(Math.random()*(i+1));
-      [teams[i],teams[j]]=[teams[j],teams[i]];
-    }
-    remoteData.fixtures.semi=[
-      {team1:teams[0],team2:teams[1]},
-      {team1:teams[2],team2:teams[3]}
-    ];
-    remoteData.fixtures.scores=[[0,0],[0,0]];
-    remoteData.fixtures.chat=[[],[]];
-    remoteData.fixtures.final=null;
-    remoteData.fixtures.finalScore=[0,0];
-    remoteData.fixtures.finalChat=[];
-    pushData();
+/* ---- Fixtures generation & editing ---- */
+function checkAutoGenerate(){
+  if(!remoteData) remoteData = loadLocal();
+  // if all teams claimed and no semi created => generate
+  const allClaimed = remoteData.teams && remoteData.teams.every(t => t.name && t.name.trim() !== "");
+  if(allClaimed && !remoteData.fixtures.semi){
+    // shuffle
+    const teams = [...remoteData.teams];
+    for(let i = teams.length-1; i>0; i--){ const j = Math.floor(Math.random()*(i+1)); [teams[i],teams[j]]=[teams[j],teams[i]]; }
+    remoteData.fixtures = {
+      semi: [
+        { team1: teams[0], team2: teams[1] },
+        { team1: teams[2], team2: teams[3] }
+      ],
+      final: null,
+      winners:["",""],
+      scores:[[0,0],[0,0]],
+      chat:[[],[]],
+      finalScore:[0,0],
+      finalChat:[]
+    };
+    saveLocal(remoteData);
+    pushUpdate(remoteData);
   }
 }
 
-/* --- Render Fixtures --- */
-function renderFixtures(){
-  const semiDiv=document.getElementById('semiFixtures');
-  const finalDiv=document.getElementById('finalFixture');
-  if(remoteData.fixtures.semi){
-    document.getElementById('semiCard').style.display='block';
-    semiDiv.innerHTML='';
-    remoteData.fixtures.semi.forEach((m,idx)=>{
-      const scores=remoteData.fixtures.scores[idx];
-      const scorers=remoteData.fixtures.chat[idx].map(c=>c.scorer+':'+c.goals).join(', ');
-      const div=document.createElement('div');
-      div.className='card';
-      div.innerHTML=`<strong>${m.team1.name} vs ${m.team2.name}</strong><br>
-        Score: <input id="scoreA_${idx}" type="number" min="0" value="${scores[0]}"> -
-               <input id="scoreB_${idx}" type="number" min="0" value="${scores[1]}"><br>
-        <label>Scorers list e.g. John:2, Mary:1</label><br>
-        <textarea id="scorers_${idx}">${scorers}</textarea><br>
-        <input id="pass_${idx}" type="password" placeholder="Admin password">
-        <button onclick="saveMatch(${idx})">Save Match (Admin)</button>`;
-      semiDiv.appendChild(div);
-    });
-  }else semiDiv.innerHTML='';
-
-  if(remoteData.fixtures.final){
-    document.getElementById('finalCard').style.display='block';
-    const f=remoteData.fixtures.final;
-    const s=remoteData.fixtures.finalScore;
-    const sc=remoteData.fixtures.finalChat.map(c=>c.scorer+':'+c.goals).join(', ');
-    finalDiv.innerHTML=`<strong>${f.team1.name} vs ${f.team2.name}</strong><br>
-      Score: <input id="finalA" type="number" min="0" value="${s[0]}"> -
-             <input id="finalB" type="number" min="0" value="${s[1]}"><br>
-      <label>Final scorers list</label><br>
-      <textarea id="finalScorers">${sc}</textarea><br>
-      <input id="finalPass" type="password" placeholder="Admin password">
-      <button onclick="saveFinal()">Save Final (Admin)</button>`;
-  }else finalDiv.innerHTML='';
-}
-
-/* --- Parse scorers string --- */
-function parseScorers(text){
-  if(!text) return [];
-  return text.split(/[,;]+/).map(s=>{
-    const m=s.trim().match(/^(.+?)[:\- ]+(\d+)$/);
-    return m?{scorer:m[1].trim(),goals:parseInt(m[2],10)}:{scorer:s.trim(),goals:1};
+/* Render fixtures UI (editable by admin) */
+function renderFixturesUI(fixtures){
+  const fixturesDiv = document.getElementById("fixtures");
+  const finalsDiv = document.getElementById("finals");
+  if(!fixtures || !fixtures.semi){ document.getElementById("fixturesArea").style.display = "none"; return; }
+  document.getElementById("fixturesArea").style.display = "block";
+  let html = "";
+  fixtures.semi.forEach((m, idx) => {
+    const scores = fixtures.scores && fixtures.scores[idx] ? fixtures.scores[idx] : [0,0];
+    const scorersText = (fixtures.chat && fixtures.chat[idx]) ? fixtures.chat[idx].map(c=>c.scorer+":"+c.goals).join(", ") : "";
+    html += `<div style="margin-bottom:12px" class="card">
+      <div style="font-weight:700">${escapeHtml(m.team1.name)} <img class="logo" src="${m.team1.logo||''}" onerror="this.style.display='none'"> vs ${escapeHtml(m.team2.name)} <img class="logo" src="${m.team2.logo||''}" onerror="this.style.display='none'"></div>
+      <div style="margin-top:6px">Score: <input id="scoreA_${idx}" type="number" min="0" value="${scores[0]}"> - <input id="scoreB_${idx}" type="number" min="0" value="${scores[1]}"></div>
+      <label>Scorers list — format: John:2, Mary:1</label>
+      <textarea id="scorersList_${idx}" placeholder="e.g. John:2, Mary:1">${escapeHtml(scorersText)}</textarea>
+      <div style="margin-top:6px">
+        <input id="adminPassMatch_${idx}" type="password" placeholder="Admin password" style="width:60%">
+        <button onclick="saveMatch(${idx})">Save Scores & Scorers</button>
+      </div>
+      <div style="margin-top:8px"><strong>Current scorers (this match)</strong>
+        <div id="matchTable_${idx}">${generateLeaderboardFromChat((fixtures.chat && fixtures.chat[idx])?fixtures.chat[idx]:[], m.team1.name+" / "+m.team2.name)}</div>
+      </div>
+    </div>`;
   });
+  fixturesDiv.innerHTML = html;
+
+  if(fixtures.final){
+    document.getElementById("finalArea").style.display = "block";
+    const f = fixtures.final;
+    const scores = fixtures.finalScore || [0,0];
+    const scorersText = (fixtures.finalChat || []).map(c=>c.scorer+":"+c.goals).join(", ");
+    finalsDiv.innerHTML = `<div style="font-weight:700">${escapeHtml(f.team1.name)} <img class="logo" src="${f.team1.logo||''}" onerror="this.style.display='none'"> vs ${escapeHtml(f.team2.name)} <img class="logo" src="${f.team2.logo||''}" onerror="this.style.display='none'"></div>
+      <div style="margin-top:6px">Score: <input id="finalScoreA" type="number" min="0" value="${scores[0]}"> - <input id="finalScoreB" type="number" min="0" value="${scores[1]}"></div>
+      <label>Final scorers list</label>
+      <textarea id="finalScorersList" placeholder="e.g. John:2, Mary:1">${escapeHtml(scorersText)}</textarea>
+      <div style="margin-top:6px">
+        <input id="adminPassFinal" type="password" placeholder="Admin password" style="width:60%">
+        <button onclick="saveFinal()">Save Final Results</button>
+      </div>
+      <div style="margin-top:8px"><strong>Current final scorers</strong>
+        <div id="finalTable">${generateLeaderboardFromChat(fixtures.finalChat||[], f.team1.name+" / "+f.team2.name)}</div>
+      </div>`;
+  } else {
+    document.getElementById("finalArea").style.display = "none";
+    finalsDiv.innerHTML = "";
+  }
 }
 
-/* --- Save Semi Match --- */
-function saveMatch(idx){
-  const pass=document.getElementById(`pass_${idx}`).value;
-  if(pass!==ADMIN_PASSWORD) return alert("Wrong admin password");
-  const scoreA=parseInt(document.getElementById(`scoreA_${idx}`).value)||0;
-  const scoreB=parseInt(document.getElementById(`scoreB_${idx}`).value)||0;
-  const scorers=parseScorers(document.getElementById(`scorers_${idx}`).value);
-
-  remoteData.fixtures.scores[idx]=[scoreA,scoreB];
-  remoteData.fixtures.chat[idx]=scorers;
-
-  const semi=remoteData.fixtures.semi;
-  const winners=[];
-  winners[0]=scoreA>scoreB?semi[0].team1:scoreB>scoreA?semi[0].team2:null;
-  winners[1]=remoteData.fixtures.scores[1][0]>remoteData.fixtures.scores[1][1]?semi[1].team1:remoteData.fixtures.scores[1][1]>remoteData.fixtures.scores[1][0]?semi[1].team2:null;
-
-  if(winners[0] && winners[1]){
-    remoteData.fixtures.final={team1:winners[0],team2:winners[1]};
-    remoteData.fixtures.finalScore=[0,0];
-    remoteData.fixtures.finalChat=[];
+/* --- Parse scorers string to [{scorer,goals}] --- */
+function parseScorersList(text){
+  if(!text) return [];
+  const parts = text.replace(/\n/g,',').split(/[,;]+/).map(s=>s.trim()).filter(Boolean);
+  const out = [];
+  for(const p of parts){
+    const m = p.match(/^(.+?)[\s:\-]+(\d+)$/);
+    if(m) out.push({ scorer: m[1].trim(), goals: parseInt(m[2],10) });
+    else out.push({ scorer: p.trim(), goals: 1 });
   }
-  pushData();
+  return out;
+}
+
+/* --- Save match (admin only) --- */
+async function saveMatch(idx){
+  const pass = document.getElementById(`adminPassMatch_${idx}`).value;
+  if(pass !== ADMIN_PASSWORD){ alert("Wrong admin password"); return; }
+  if(!remoteData) remoteData = loadLocal();
+  const sA = parseInt(document.getElementById(`scoreA_${idx}`).value)||0;
+  const sB = parseInt(document.getElementById(`scoreB_${idx}`).value)||0;
+  const parsed = parseScorersList(document.getElementById(`scorersList_${idx}`).value || "");
+
+  remoteData.fixtures.scores = remoteData.fixtures.scores || [[0,0],[0,0]];
+  remoteData.fixtures.scores[idx] = [sA, sB];
+  remoteData.fixtures.chat = remoteData.fixtures.chat || [[],[]];
+  remoteData.fixtures.chat[idx] = parsed.map(p=>({ time: new Date().toLocaleTimeString(), scorer: p.scorer, goals: p.goals }));
+
+  // Update winners and final automatically
+  const [a0,a1] = remoteData.fixtures.scores[0];
+  const [b0,b1] = remoteData.fixtures.scores[1];
+  remoteData.fixtures.winners[0] = a0>a1 ? remoteData.fixtures.semi[0].team1.name : a1>a0 ? remoteData.fixtures.semi[0].team2.name : "";
+  remoteData.fixtures.winners[1] = b0>b1 ? remoteData.fixtures.semi[1].team1.name : b1>b0 ? remoteData.fixtures.semi[1].team2.name : "";
+
+  if(remoteData.fixtures.winners[0] && remoteData.fixtures.winners[1]){
+    const t1 = (remoteData.fixtures.semi[0].team1.name === remoteData.fixtures.winners[0]) ? remoteData.fixtures.semi[0].team1 : remoteData.fixtures.semi[0].team2;
+    const t2 = (remoteData.fixtures.semi[1].team1.name === remoteData.fixtures.winners[1]) ? remoteData.fixtures.semi[1].team1 : remoteData.fixtures.semi[1].team2;
+    remoteData.fixtures.final = { team1: t1, team2: t2 };
+    remoteData.fixtures.finalScore = remoteData.fixtures.finalScore || [0,0];
+    remoteData.fixtures.finalChat = remoteData.fixtures.finalChat || [];
+  } else {
+    remoteData.fixtures.final = null;
+    remoteData.fixtures.finalScore = [0,0];
+    remoteData.fixtures.finalChat = [];
+  }
+
+  saveLocal(remoteData);
   renderAll();
+  await pushUpdate(remoteData);
 }
 
-/* --- Save Final --- */
-function saveFinal(){
-  const pass=document.getElementById("finalPass").value;
-  if(pass!==ADMIN_PASSWORD) return alert("Wrong admin password");
-  const sA=parseInt(document.getElementById("finalA").value)||0;
-  const sB=parseInt(document.getElementById("finalB").value)||0;
-  const scorers=parseScorers(document.getElementById("finalScorers").value);
+/* --- Save final (admin only) --- */
+async function saveFinal(){
+  const pass = document.getElementById("adminPassFinal").value || document.getElementById("adminPassFinal")?.value;
+  const passFromInput = document.getElementById("adminPassFinal") ? document.getElementById("adminPassFinal").value : document.getElementById("adminPassFinal");
+  const passField = document.getElementById("adminPassFinal");
+  const passUsed = passField ? passField.value : document.getElementById("adminPass").value;
+  if(passUsed !== ADMIN_PASSWORD){ alert("Wrong admin password"); return; }
+  if(!remoteData) remoteData = loadLocal();
+  const sA = parseInt(document.getElementById("finalScoreA").value)||0;
+  const sB = parseInt(document.getElementById("finalScoreB").value)||0;
+  const parsed = parseScorersList(document.getElementById("finalScorersList").value || "");
+  remoteData.fixtures.finalScore = [sA, sB];
+  remoteData.fixtures.finalChat = parsed.map(p=>({ time: new Date().toLocaleTimeString(), scorer: p.scorer, goals: p.goals }));
+  saveLocal(remoteData); renderAll(); await pushUpdate(remoteData);
+}
 
-  remoteData.fixtures.finalScore=[sA,sB];
-  remoteData.fixtures.finalChat=scorers;
-  pushData();
+/* --- Leaderboards generation --- */
+function generateLeaderboardFromChat(chat, label){
+  const scores = {};
+  (chat||[]).forEach(c=>{ if(!scores[c.scorer]) scores[c.scorer] = { team: label, goals: 0 }; scores[c.scorer].goals += (c.goals||0); });
+  const arr = Object.keys(scores).map(k=>({ name:k, ...scores[k] })).sort((a,b)=>b.goals - a.goals);
+  if(arr.length===0) return "<div class='muted'>No scorers yet</div>";
+  return `<table><tr><th>Rank</th><th>Scorer</th><th>Team(s)</th><th>Goals</th></tr>${arr.map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.team)}</td><td>${r.goals}</td></tr>`).join("")}</table>`;
+}
+
+function renderLeaderboards(data){
+  // per match
+  if(!data.fixtures || !data.fixtures.semi){
+    document.getElementById("matchLeaderboards")?.innerHTML = "<div class='muted'>Fixtures not generated</div>";
+  } else {
+    // nothing to do here (we render per-fixture inside renderFixturesUI)
+  }
+
+  // global aggregation
+  if(!data.fixtures || !data.fixtures.semi){
+    document.getElementById("globalLeaderboardTable").innerHTML = "<div class='muted'>Fixtures not generated</div>";
+    document.getElementById("globalChat").innerHTML = "<div class='muted'>No scorer events yet</div>";
+    return;
+  }
+
+  const all = [];
+  data.fixtures.semi.forEach((m, idx) => { (data.fixtures.chat[idx]||[]).forEach(c => all.push({ scorer: c.scorer, goals: c.goals, team: m.team1.name + " / " + m.team2.name, time: c.time })); });
+  (data.fixtures.finalChat||[]).forEach(c => all.push({ scorer: c.scorer, goals: c.goals, team: data.fixtures.final ? data.fixtures.final.team1.name + " / " + data.fixtures.final.team2.name : "Final", time: c.time }));
+
+  // chat feed
+  if(all.length===0) document.getElementById("globalChat").innerHTML = "<div class='muted'>No scorer entries yet</div>";
+  else {
+    const rows = all.map(r=>`<tr><td>${escapeHtml(r.time)}</td><td>${escapeHtml(r.team)}</td><td>${escapeHtml(r.scorer)}</td><td>${r.goals}</td></tr>`).join("");
+    document.getElementById("globalChat").innerHTML = `<table><tr><th>Time</th><th>Teams</th><th>Scorer</th><th>Goals</th></tr>${rows}</table>`;
+  }
+
+  // aggregate global scorers
+  const agg = {};
+  all.forEach(it => { if(!agg[it.scorer]) agg[it.scorer] = { team: it.team, goals: 0 }; agg[it.scorer].goals += (it.goals||0); });
+  const ranking = Object.keys(agg).map(k => ({ name: k, team: agg[k].team, goals: agg[k].goals })).sort((a,b)=>b.goals - a.goals);
+  if(ranking.length===0) document.getElementById("globalLeaderboardTable").innerHTML = "<div class='muted'>No scorers yet</div>";
+  else document.getElementById("globalLeaderboardTable").innerHTML = `<table><tr><th>Rank</th><th>Scorer</th><th>Team(s)</th><th>Goals</th></tr>${ranking.map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.team)}</td><td>${r.goals}</td></tr>`).join("")}</table>`;
+}
+
+/* --- Admin reset & force fetch --- */
+function resetEverything(){
+  const pass = document.getElementById("adminPass").value;
+  if(pass !== ADMIN_PASSWORD){ alert("Wrong admin password"); return; }
+  if(!confirm("Reset ALL competition data? This clears slots, fixtures, scores, and scorers.")) return;
+  const payload = {
+    teams: [
+      { name: "", logo: "", claimedAt: 0 },
+      { name: "", logo: "", claimedAt: 0 },
+      { name: "", logo: "", claimedAt: 0 },
+      { name: "", logo: "", claimedAt: 0 }
+    ],
+    fixtures: { semi:null, final:null, winners:["",""], scores:[[0,0],[0,0]], chat:[[],[]], finalScore:[0,0], finalChat:[] }
+  };
+  remoteData = normalize(payload);
+  saveLocal(remoteData);
   renderAll();
+  pushUpdate(remoteData);
 }
 
-/* --- Global Leaderboard --- */
-function renderLeaderboard(){
-  const out={};
-  if(remoteData.fixtures.semi){
-    remoteData.fixtures.chat.forEach((c,idx)=>{ c.forEach(e=>{ out[e.scorer]=(out[e.scorer]||0)+e.goals; }); });
-  }
-  remoteData.fixtures.finalChat.forEach(e=>{ out[e.scorer]=(out[e.scorer]||0)+e.goals; });
+function forceFetch(){ fetchRemote(); }
 
-  const arr=Object.keys(out).map(k=>({name:k,goals:out[k]})).sort((a,b)=>b.goals-a.goals);
-  const div=document.getElementById("globalLeaderboard");
-  if(arr.length===0) div.innerHTML='<div class="muted">No scorers yet</div>';
-  else{
-    div.innerHTML='<table><tr><th>Rank</th><th>Scorer</th><th>Goals</th></tr>'+
-      arr.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.goals}</td></tr>`).join('')+'</table>';
-  }
-}
+/* --- Exports used above --- */
+function renderFixturesUI(fixtures){ renderFixturesUI = renderFixturesUI_func; return renderFixturesUI_func(fixtures); } // placeholder to appease linter
+function renderFixturesUI_func(fixtures){ /* implementation above already handles UI - this wrapper prevents duplicate declaration warnings */ return; }
 
-/* --- Poll backend every 3s --- */
-fetchData();
-setInterval(fetchData,3000);
+/* Because functions were referenced earlier, ensure leaderboards render on startup */
+function renderLeaderboardsWrapper(){ if(remoteData) renderLeaderboards(remoteData); }
+
+/* kick first paint of leaderboards if remoteData already set */
+if(remoteData) renderAll();
 </script>
 </body>
-</html>
+  </html>
